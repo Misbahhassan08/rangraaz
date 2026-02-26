@@ -22,6 +22,7 @@ const Allproducts = () => {
   const favorites = productStore((state) => state.favorites);
   const toggleFavorite = productStore((state) => state.toggleFavorite);
 
+  
   // Fetch Products
   useEffect(() => {
     const fetchProducts = async () => {
