@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Package, Clock, Truck, CheckCircle2 } from 'lucide-react';
 import { Line, Pie } from 'react-chartjs-2';
 import {
@@ -16,10 +16,14 @@ const Adminshome = () => {
     totalOrders: 0, pending: 0, processing: 0, delivered: 0, totalProducts: 0
   });
 
-  // Graph states
+  // Graph states - current week
   const [weeklyLabels, setWeeklyLabels] = useState([]);
   const [salesDataPoints, setSalesDataPoints] = useState([]);
   const [orderCountDataPoints, setOrderCountDataPoints] = useState([]);
+
+  // Graph states - previous week
+  const [prevSalesDataPoints, setPrevSalesDataPoints] = useState([]);
+  const [prevOrderCountDataPoints, setPrevOrderCountDataPoints] = useState([]);
 
   // Best Selling Products State
   const [bestSellingData, setBestSellingData] = useState({
@@ -40,13 +44,24 @@ const Adminshome = () => {
         if (ordersData.success) {
           const allOrders = ordersData.data;
 
-          // --- 1. LOGIC: Last 7 Days Data ---
+          // --- 1. LOGIC: Last 7 Days (Current Week) ---
           const last7Days = {};
+          const dayLabels = []; // short day labels like "Mon", "Tue"
           for (let i = 6; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
             const dateStr = date.toISOString().split('T')[0];
             last7Days[dateStr] = { sales: 0, count: 0 };
+            dayLabels.push(date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+          }
+
+          // --- 2. LOGIC: Previous 7 Days (Previous Week) ---
+          const prev7Days = {};
+          for (let i = 13; i >= 7; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            prev7Days[dateStr] = { sales: 0, count: 0 };
           }
 
           allOrders.forEach(order => {
@@ -55,17 +70,24 @@ const Adminshome = () => {
               last7Days[orderDate].count += 1;
               last7Days[orderDate].sales += parseFloat(order.total_price || 0);
             }
+            if (prev7Days[orderDate] !== undefined) {
+              prev7Days[orderDate].count += 1;
+              prev7Days[orderDate].sales += parseFloat(order.total_price || 0);
+            }
           });
 
-          const labels = Object.keys(last7Days);
-          setWeeklyLabels(labels);
-          setSalesDataPoints(labels.map(date => last7Days[date].sales));
-          setOrderCountDataPoints(labels.map(date => last7Days[date].count));
+          const currentKeys = Object.keys(last7Days);
+          const prevKeys = Object.keys(prev7Days);
 
-          // --- 2. LOGIC: Best Selling Products  ---
+          setWeeklyLabels(dayLabels);
+          setSalesDataPoints(currentKeys.map(date => last7Days[date].sales));
+          setOrderCountDataPoints(currentKeys.map(date => last7Days[date].count));
+          setPrevSalesDataPoints(prevKeys.map(date => prev7Days[date].sales));
+          setPrevOrderCountDataPoints(prevKeys.map(date => prev7Days[date].count));
+
+          // --- 3. LOGIC: Best Selling Products ---
           const productCounts = {};
           allOrders.forEach(order => {
-            // Note: Make sure your API returns the 'products' array for each order
             if (order.products && Array.isArray(order.products)) {
               order.products.forEach(item => {
                 const pName = item.name || "Unknown Product";
@@ -75,7 +97,6 @@ const Adminshome = () => {
             }
           });
 
-          // Sort products by sales count and take top 5
           const sortedProducts = Object.entries(productCounts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5);
@@ -88,7 +109,7 @@ const Adminshome = () => {
             }]
           });
 
-          // --- 3. STATS UPDATE ---
+          // --- 4. STATS UPDATE ---
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
           const weeklyOrders = allOrders.filter(o => new Date(o.created_at) >= sevenDaysAgo);
@@ -109,29 +130,104 @@ const Adminshome = () => {
       });
   }, []);
 
-  // Line Chart Configs
+  // Line Chart Configs with 2 lines (current week vs previous week)
   const salesChartData = {
     labels: weeklyLabels,
-    datasets: [{
-      label: 'Sales ($)',
-      data: salesDataPoints,
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      fill: true,
-      tension: 0.4,
-    }]
+    datasets: [
+      {
+        label: 'This Week (PKR)',
+        data: salesDataPoints,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: '#10b981',
+      },
+      {
+        label: 'Last Week (PKR)',
+        data: prevSalesDataPoints,
+        borderColor: '#94a3b8',
+        backgroundColor: 'rgba(148, 163, 184, 0.05)',
+        fill: false,
+        tension: 0.4,
+        borderWidth: 2,
+        borderDash: [5, 4],
+        pointRadius: 3,
+        pointBackgroundColor: '#94a3b8',
+      }
+    ]
   };
 
   const ordersTrendData = {
     labels: weeklyLabels,
-    datasets: [{
-      label: 'Order Count',
-      data: orderCountDataPoints,
-      borderColor: '#f97316',
-      backgroundColor: 'rgba(249, 115, 22, 0.1)',
-      fill: true,
-      tension: 0.3,
-    }]
+    datasets: [
+      {
+        label: 'This Week',
+        data: orderCountDataPoints,
+        borderColor: '#f97316',
+        backgroundColor: 'rgba(249, 115, 22, 0.08)',
+        fill: true,
+        tension: 0.3,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: '#f97316',
+      },
+      {
+        label: 'Last Week',
+        data: prevOrderCountDataPoints,
+        borderColor: '#94a3b8',
+        backgroundColor: 'rgba(148, 163, 184, 0.05)',
+        fill: false,
+        tension: 0.3,
+        borderWidth: 2,
+        borderDash: [5, 4],
+        pointRadius: 3,
+        pointBackgroundColor: '#94a3b8',
+      }
+    ]
+  };
+
+  const chartOptions = {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: {
+          boxWidth: 12,
+          boxHeight: 2,
+          usePointStyle: true,
+          pointStyle: 'line',
+          font: { size: 11 },
+          color: '#6b7280',
+        }
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { display: false },
+        ticks: {
+          stepSize: activeTab === 'orders' ? 1 : undefined,
+          callback: function (value) {
+            if (activeTab === 'sales') return 'PKR' + value.toLocaleString();
+            if (value % 1 === 0) return value;
+          }
+        }
+      },
+      x: { grid: { display: false } }
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    }
   };
 
   return (
@@ -152,19 +248,22 @@ const Adminshome = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-gray-700 uppercase tracking-tight">
-                {activeTab === 'sales' ? 'Weekly Sales Revenue' : 'Weekly Order Volume'}
-              </h3>
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-tight">
+                  {activeTab === 'sales' ? 'Weekly Sales Revenue' : 'Weekly Order Volume'}
+                </h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">This week vs last week</p>
+              </div>
               <div className="flex space-x-4">
                 <button
                   onClick={() => setActiveTab('sales')}
-                  className={`text-xs font-bold transition-all py-1 ${activeTab === 'sales' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`text-xs font-bold transition-all py-1 PKR{activeTab === 'sales' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   Sales
                 </button>
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className={`text-xs font-bold transition-all py-1 ${activeTab === 'orders' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`text-xs font-bold transition-all py-1 PKR{activeTab === 'orders' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   Orders
                 </button>
@@ -174,29 +273,7 @@ const Adminshome = () => {
             <div className="h-64">
               <Line
                 data={activeTab === 'sales' ? salesChartData : ordersTrendData}
-                options={{
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      grid: { display: false },
-                      ticks: {
-
-                        stepSize: activeTab === 'orders' ? 1 : undefined,
-                        callback: function (value) {
-                          if (activeTab === 'sales') {
-                            return '$' + value.toLocaleString();
-                          }
-                          if (value % 1 === 0) {
-                            return value;
-                          }
-                        }
-                      }
-                    },
-                    x: { grid: { display: false } }
-                  }
-                }}
+                options={chartOptions}
               />
             </div>
           </div>
@@ -219,7 +296,7 @@ const Adminshome = () => {
 
 const StatCard = ({ title, value, icon: Icon, colorClass, bgColorClass, loading }) => (
   <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-3 h-24 hover:shadow-md transition-shadow">
-    <div className={`${bgColorClass} p-3 rounded-xl`}><Icon className={colorClass} size={20} /></div>
+    <div className={`PKR{bgColorClass} p-3 rounded-xl`}><Icon className={colorClass} size={20} /></div>
     <div className="overflow-hidden">
       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider truncate">{title}</p>
       <h3 className="text-xl font-black text-gray-900 mt-0.5">{loading ? "..." : value}</h3>

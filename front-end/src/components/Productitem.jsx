@@ -96,11 +96,11 @@ const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_ty
         <div className="mt-1 flex flex-wrap items-center gap-1 sm:gap-2">
           {isSaleOn ? (
             <>
-              <p className="text-xs sm:text-sm text-red-600 font-bold">Rs. {sellPrice}</p>
-              <p className="text-[10px] sm:text-xs text-gray-400 line-through">Rs. {originalPrice}</p>
+              <p className="text-xs sm:text-sm text-red-600 font-bold">PKR. {sellPrice}</p>
+              <p className="text-[10px] sm:text-xs text-gray-400 line-through">PKR. {originalPrice}</p>
             </>
           ) : (
-            <p className="text-xs sm:text-sm text-black font-bold">Rs. {originalPrice}</p>
+            <p className="text-xs sm:text-sm text-black font-bold">PKR. {originalPrice}</p>
           )}
         </div>
       </div>

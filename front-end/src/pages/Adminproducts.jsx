@@ -8,6 +8,7 @@ const ProductTable = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [fetchedCategories, setFetchedCategories] = useState([]);
   const [fetchedSubcategories, setFetchedSubcategories] = useState([]);
+  const [activeFilter, setActiveFilter] = useState("ALL");
 
   const initialState = {
     product_name: "",
@@ -28,7 +29,6 @@ const ProductTable = () => {
 
   const [newProduct, setNewProduct] = useState(initialState);
 
-  // --- API Calls ---
   const fetchProducts = async () => {
     try {
       const response = await fetch(URLS.fetchProducts);
@@ -56,10 +56,7 @@ const ProductTable = () => {
   }, []);
 
   const fetchSubcategories = async (categoryId) => {
-    if (!categoryId) {
-      setFetchedSubcategories([]);
-      return;
-    }
+    if (!categoryId) { setFetchedSubcategories([]); return; }
     try {
       const response = await fetch(URLS.fetchSubcategories(categoryId));
       const data = await response.json();
@@ -69,7 +66,24 @@ const ProductTable = () => {
     }
   };
 
-  // --- Handlers ---
+  // ✅ Classification column (RANGRAAZ, ALLY'S etc) se unique tabs banao
+  const uniqueCategories = [
+    "ALL",
+    ...new Set(
+      productsData
+        .map((p) => p.category_name || p.category)
+        .filter(Boolean)
+    ),
+  ];
+
+  // ✅ Filter products based on active tab
+  const filteredProducts =
+    activeFilter === "ALL"
+      ? productsData
+      : productsData.filter(
+          (p) => (p.category_name || p.category) === activeFilter
+        );
+
   const handleEditClick = (product) => {
     setEditProduct({ ...product, image_file: null });
     setIsCreating(false);
@@ -85,39 +99,23 @@ const ProductTable = () => {
   const handleChange = (e, isEdit = false) => {
     const { name, value, type, checked, files } = e.target;
     let val;
-
-    if (type === "file") {
-      val = files[0];
-    } else {
-      val = type === "checkbox" ? checked : value;
-    }
-
-    if (isEdit) {
-      setEditProduct((prev) => ({ ...prev, [name]: val }));
-    } else {
-      setNewProduct((prev) => ({ ...prev, [name]: val }));
-    }
-
+    if (type === "file") { val = files[0]; }
+    else { val = type === "checkbox" ? checked : value; }
+    if (isEdit) { setEditProduct((prev) => ({ ...prev, [name]: val })); }
+    else { setNewProduct((prev) => ({ ...prev, [name]: val })); }
     if (name === "category_id") {
       fetchSubcategories(value);
-      if (isEdit) {
-        setEditProduct(prev => ({ ...prev, subcategory_id: "" }));
-      } else {
-        setNewProduct(prev => ({ ...prev, subcategory_id: "" }));
-      }
+      if (isEdit) { setEditProduct(prev => ({ ...prev, subcategory_id: "" })); }
+      else { setNewProduct(prev => ({ ...prev, subcategory_id: "" })); }
     }
   };
 
   const handleSubmit = async (e, isEdit) => {
     e.preventDefault();
     const currentData = isEdit ? editProduct : newProduct;
-
-    // Check required fields
     if (!currentData.product_name || !currentData.category_id || !currentData.subcategory_id || !currentData.sku) {
-      alert("Please fill all required fields!");
-      return;
+      alert("Please fill all required fields!"); return;
     }
-
     const formData = new FormData();
     formData.append("product_name", currentData.product_name);
     formData.append("brand", currentData.brand || "RANGRAAZ");
@@ -131,46 +129,24 @@ const ProductTable = () => {
     formData.append("size", currentData.size || "");
     formData.append("category_id", currentData.category_id);
     formData.append("subcategory_id", currentData.subcategory_id);
-
-    if (currentData.image_file) {
-      formData.append("image", currentData.image_file);
-    }
-
-    const url = isEdit
-      ? URLS.updateProduct(currentData.id)
-      : URLS.createProduct;
-
+    if (currentData.image_file) { formData.append("image", currentData.image_file); }
+    const url = isEdit ? URLS.updateProduct(currentData.id) : URLS.createProduct;
     try {
-      const response = await fetch(url, {
-        method: isEdit ? "PUT" : "POST",
-        body: formData,
-      });
-
+      const response = await fetch(url, { method: isEdit ? "PUT" : "POST", body: formData });
       const result = await response.json();
-
       if (response.ok) {
         alert(isEdit ? "Updated Successfully!" : "Product Added Successfully!");
-        setEditProduct(null);
-        setIsCreating(false);
-        fetchProducts();
-      } else {
-        alert("Error: " + JSON.stringify(result));
-      }
-    } catch (error) {
-      alert("API Error occurred: " + error);
-    }
+        setEditProduct(null); setIsCreating(false); fetchProducts();
+      } else { alert("Error: " + JSON.stringify(result)); }
+    } catch (error) { alert("API Error occurred: " + error); }
   };
 
   const handleDelete = async (product) => {
     if (window.confirm(`Delete ${product.product_name}?`)) {
       try {
-        const response = await fetch(URLS.deleteProduct(product.id), {
-          method: 'DELETE',
-        });
+        const response = await fetch(URLS.deleteProduct(product.id), { method: 'DELETE' });
         if (response.ok) fetchProducts();
-      } catch (error) {
-        console.error(error);
-      }
+      } catch (error) { console.error(error); }
     }
   };
 
@@ -190,36 +166,25 @@ const ProductTable = () => {
             <X size={24} />
           </button>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Product Name</label>
             <input type="text" name="product_name" value={data.product_name} onChange={(e) => handleChange(e, isEdit)} className="w-full border-2 border-gray-100 p-2.5 rounded-xl focus:border-indigo-500 outline-none transition-all" required />
           </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Product Type</label>
             <input type="text" name="product_type" value={data.product_type} onChange={(e) => handleChange(e, isEdit)} className="w-full border-2 border-gray-100 p-2.5 rounded-xl focus:border-indigo-500 outline-none transition-all" required />
           </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Vendor</label>
             <input type="text" name="vendor" value={data.vendor} onChange={(e) => handleChange(e, isEdit)} className="w-full border-2 border-gray-100 p-2.5 rounded-xl focus:border-indigo-500 outline-none transition-all" required />
           </div>
-
-          {/* UPLOAD BOX (PLUS SIGN) */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1">
               <ImageIcon size={12} /> Product Image
             </label>
             <div className="relative border-2 border-dashed border-indigo-200 rounded-xl p-2 hover:bg-indigo-50 transition-all flex items-center justify-center cursor-pointer h-[50px]">
-              <input
-                type="file"
-                name="image_file"
-                onChange={(e) => handleChange(e, isEdit)}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                accept="image/*"
-              />
+              <input type="file" name="image_file" onChange={(e) => handleChange(e, isEdit)} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
               <div className="flex items-center gap-2 text-indigo-500">
                 <Plus size={18} />
                 <span className="text-xs font-bold">
@@ -228,17 +193,14 @@ const ProductTable = () => {
               </div>
             </div>
           </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1"><Maximize size={12} /> Size</label>
             <input type="text" name="size" value={data.size} onChange={(e) => handleChange(e, isEdit)} placeholder="e.g. XL, Large, 42" className="w-full border-2 border-gray-100 p-2.5 rounded-xl focus:border-indigo-500 outline-none transition-all" />
           </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">SKU Code</label>
             <input type="text" name="sku" value={data.sku} onChange={(e) => handleChange(e, isEdit)} className="w-full border-2 border-gray-100 p-2.5 rounded-xl focus:border-indigo-500 outline-none transition-all" />
           </div>
-
           <div className="bg-indigo-50/50 p-5 rounded-2xl col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4 border border-indigo-100">
             <div className="space-y-1">
               <label className="text-xs font-bold text-indigo-600 uppercase">Original Price (Rs)</label>
@@ -259,7 +221,6 @@ const ProductTable = () => {
               <span className="text-xl font-black text-green-600">Rs. {calculatedSalePrice}</span>
             </div>
           </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
             <select name="category_id" value={data.category_id} onChange={(e) => handleChange(e, isEdit)} className="w-full border-2 border-gray-100 p-2.5 rounded-xl outline-none focus:border-indigo-500 bg-white" required>
@@ -267,29 +228,18 @@ const ProductTable = () => {
               {fetchedCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Subcategory</label>
-            <select
-              name="subcategory_id"
-              value={data.subcategory_id || ""}
-              onChange={(e) => handleChange(e, isEdit)}
-              className="w-full border-2 border-gray-100 p-2.5 rounded-xl outline-none focus:border-indigo-500 bg-white"
-              disabled={!data.category_id}
-            >
+            <select name="subcategory_id" value={data.subcategory_id || ""} onChange={(e) => handleChange(e, isEdit)} className="w-full border-2 border-gray-100 p-2.5 rounded-xl outline-none focus:border-indigo-500 bg-white" disabled={!data.category_id}>
               <option value="">Select Subcategory</option>
-              {fetchedSubcategories.map((sub) => (
-                <option key={sub.id} value={sub.id}>{sub.name}</option>
-              ))}
+              {fetchedSubcategories.map((sub) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
             </select>
           </div>
-
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Stock Quantity</label>
             <input type="number" name="quantity" value={data.quantity} onChange={(e) => handleChange(e, isEdit)} className="w-full border-2 border-gray-100 p-2.5 rounded-xl outline-none focus:border-indigo-500" required />
           </div>
         </div>
-
         <div className="mt-8 flex gap-3">
           <button type="submit" className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 font-bold transition-all shadow-lg shadow-indigo-200">
             <Save size={20} /> {isEdit ? "Update Product" : "Save Product"}
@@ -305,7 +255,7 @@ const ProductTable = () => {
   return (
     <div className="p-4 md:p-10 bg-[#F8FAFC] min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
               <Tag className="text-indigo-600" size={32} /> STOCK MASTER
@@ -313,7 +263,7 @@ const ProductTable = () => {
             <p className="text-slate-500 font-medium mt-1">Manage your inventory and seasonal sales</p>
           </div>
           {!isCreating && !editProduct && (
-            <button onClick={handleCreateClick} className="w-full md:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-4 rounded-2xl bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-500/20">
+            <button onClick={handleCreateClick} className="w-full md:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-4 rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform hover:-translate-y-1">
               <Plus size={20} strokeWidth={3} /> <span className="font-bold">ADD NEW PRODUCT</span>
             </button>
           )}
@@ -321,6 +271,34 @@ const ProductTable = () => {
 
         {isCreating && <ProductForm data={newProduct} isEdit={false} />}
         {editProduct && <ProductForm data={editProduct} isEdit={true} />}
+
+        {/* ===== FILTER TABS - classification (RANGRAAZ / ALLY'S / HEERA'S) se ===== */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {uniqueCategories.map((cat) => {
+            const isActive = activeFilter === cat;
+            const count =
+              cat === "ALL"
+                ? productsData.length
+                : productsData.filter((p) => (p.category_name || p.category) === cat).length;
+
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 ${
+                  isActive
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100"
+                    : "bg-white text-slate-500 border-slate-100 hover:border-indigo-300 hover:text-indigo-600"
+                }`}
+              >
+                {cat}
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
@@ -335,7 +313,7 @@ const ProductTable = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {productsData.map((product) => (
+                {filteredProducts.map((product) => (
                   <tr key={product.id} className="hover:bg-indigo-50/30 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
@@ -378,9 +356,9 @@ const ProductTable = () => {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex flex-col gap-1">
-                        <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black w-fit uppercase">{product.category_name || product.category}</span>
-                      </div>
+                      <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black w-fit uppercase">
+                        {product.category_name || product.category}
+                      </span>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex justify-center gap-2">
@@ -393,11 +371,15 @@ const ProductTable = () => {
               </tbody>
             </table>
           </div>
-          {productsData.length === 0 && (
+          {filteredProducts.length === 0 && (
             <div className="py-24 flex flex-col items-center justify-center text-slate-300">
               <Tag size={64} strokeWidth={1} className="mb-4 opacity-20" />
-              <p className="font-bold text-lg">No products in your catalog yet.</p>
-              <p className="text-sm">Start by adding your first product above.</p>
+              <p className="font-bold text-lg">
+                {activeFilter === "ALL" ? "No products in your catalog yet." : `No products found for "${activeFilter}".`}
+              </p>
+              <p className="text-sm">
+                {activeFilter === "ALL" ? "Start by adding your first product above." : "Try a different filter."}
+              </p>
             </div>
           )}
         </div>

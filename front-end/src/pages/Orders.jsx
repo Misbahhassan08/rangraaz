@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import URLS from "../urls";
 
 const statusOptions = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
-const SHIPPO_TOKEN = "shippo_test_b7c1fed50ad555704dfb8fe0a82fd60f69ab42e0";
-
+const SHIPPO_TOKEN = import.meta.env.VITE_SHIPPO_TOKEN;
 const OrdersTable = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -35,6 +34,11 @@ const OrdersTable = () => {
   const [selectedRate, setSelectedRate] = useState(null);
   const [currentShipmentId, setCurrentShipmentId] = useState(null);
   const [step, setStep] = useState("form");
+  const formatPKR = (price) => {
+  return new Intl.NumberFormat('en-PK', {
+    maximumFractionDigits: 0,
+  }).format(Math.round(price));
+};
 
   // Fetch orders
   useEffect(() => {
@@ -71,7 +75,7 @@ const OrdersTable = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-       Authorization: `ShippoToken ${SHIPPO_TOKEN}` ,
+          Authorization: `ShippoToken ${SHIPPO_TOKEN}`,
         },
 
         body: JSON.stringify({
@@ -120,7 +124,7 @@ const OrdersTable = () => {
       // STEP 2: Fetch rates for this shipment
       const rateRes = await fetch(
         `https://api.goshippo.com/shipments/${shipmentData.object_id}/rates/`,
-       { headers: { Authorization: `ShippoToken ${SHIPPO_TOKEN}` } }
+        { headers: { Authorization: `ShippoToken ${SHIPPO_TOKEN}` } }
       );
       const rateData = await rateRes.json();
       console.log("Rates Response:", rateData);
@@ -150,7 +154,7 @@ const OrdersTable = () => {
       const transRes = await fetch("https://api.goshippo.com/transactions/", {
         method: "POST",
         headers: {
-           Authorization: `ShippoToken ${SHIPPO_TOKEN}`,
+          Authorization: `ShippoToken ${SHIPPO_TOKEN}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -163,29 +167,29 @@ const OrdersTable = () => {
       const transData = await transRes.json();
       console.log("Transaction Response:", transData);
 
-     if (transData.status === "SUCCESS") {
-  
-await fetch(URLS.updateOrderShipment(selectedOrder.order_id), {
-  method: "PATCH",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    shipment_id: currentShipmentId,
-    tracking_id: transData.tracking_number,
-  }),
-});
+      if (transData.status === "SUCCESS") {
 
-  const refreshed = await fetch(URLS.allOrders).then(r => r.json());
-  setOrders(refreshed.data || []);
+        await fetch(URLS.updateOrderShipment(selectedOrder.order_id), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shipment_id: currentShipmentId,
+            tracking_id: transData.tracking_number,
+          }),
+        });
 
-  setShowForm(false);
-  navigate("/dashboard/tracking", {
-    state: {
-      tracking_number: transData.tracking_number,
-      label_url: transData.label_url,
-      tracking_url_provider: transData.tracking_url_provider,
-    },
-  });
-}else {
+        const refreshed = await fetch(URLS.allOrders).then(r => r.json());
+        setOrders(refreshed.data || []);
+
+        setShowForm(false);
+        navigate("/dashboard/tracking", {
+          state: {
+            tracking_number: transData.tracking_number,
+            label_url: transData.label_url,
+            tracking_url_provider: transData.tracking_url_provider,
+          },
+        });
+      } else {
         console.error("Transaction failed:", transData);
         alert("Failed to create label. Check console for details.");
       }
@@ -201,8 +205,8 @@ await fetch(URLS.updateOrderShipment(selectedOrder.order_id), {
       <h2 className="text-3xl font-semibold mb-6 text-gray-800">Order Details</h2>
 
       {/* TABLE SAME AS BEFORE */}
-      <div className="table-responsive overflow-x-auto shadow-md rounded-lg border border-gray-200">
-        <table className="table min-w-full divide-y divide-gray-200 text-sm">
+      <div className="overflow-x-auto shadow-md rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-gray-700 uppercase text-xs tracking-wider">
             <tr>
               <th className="px-6 py-3 text-left">Order ID</th>
@@ -228,8 +232,8 @@ await fetch(URLS.updateOrderShipment(selectedOrder.order_id), {
                 <td className="px-6 py-4">{order.shipment_id || "-"}</td>
                 <td className="px-6 py-4">{order.tracking_id || "-"}</td>
                 <td className="px-6 py-4 font-semibold text-green-600">
-                  Rs. {order.total_price}
-                </td>
+  PKR {formatPKR(order.total_price)}
+</td>
                 <td className="px-6 py-4">{order.payment_method}</td>
                 <td className="px-6 py-4 text-gray-500 text-xs">
                   {new Date(order.created_at).toLocaleString()}
@@ -274,7 +278,7 @@ await fetch(URLS.updateOrderShipment(selectedOrder.order_id), {
                         to_email: addr.email || "",
                       }));
                     }}
-                    className="bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-500/20 px-10 py-1 rounded-md hover:bg-blue-700"
+                    className="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
                   >
                     Create Shipment
                   </button>

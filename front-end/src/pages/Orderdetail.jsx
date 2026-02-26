@@ -32,7 +32,7 @@ const OrderDetail = () => {
           <span className="font-medium">Tracking ID:</span> {order.tracking_id}
         </p>
         <p>
-          <span className="font-medium">Total Price:</span> Rs.{order.total_price}
+          <span className="font-medium">Total Price:</span> PKR.{order.total_price}
         </p>
         <p>
           <span className="font-medium">Payment Method:</span> {order.payment_method}
