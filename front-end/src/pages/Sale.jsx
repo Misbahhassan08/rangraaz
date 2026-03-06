@@ -17,7 +17,7 @@ const Sale = () => {
   // Fetch only products where is_sale_on is true
   const fetchSaleProducts = async () => {
     try {
-     const response = await fetch(URLS.saleProducts);
+      const response = await fetch(URLS.saleProducts);
       const data = await response.json();
       setSaleProducts(data.data || []);
     } catch (error) {
@@ -58,9 +58,8 @@ const Sale = () => {
                     size: product.size,
                   })
                 }
-                className={`absolute top-4 right-4 z-10 cursor-pointer w-6 h-6 transition-colors ${
-                  isFavorited(product.id) ? "text-red-500" : "text-gray-400"
-                } opacity-80 hover:opacity-100`}
+                className={`absolute top-4 right-4 z-10 cursor-pointer w-6 h-6 transition-colors ${isFavorited(product.id) ? "text-red-500" : "text-gray-400"
+                  } opacity-80 hover:opacity-100`}
                 strokeWidth={1.25}
               />
 

@@ -1,31 +1,36 @@
 # views.py
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Customer,Role
+from .models import Customer
 import json
+from django.db import transaction
+from google.oauth2 import id_token
+from google.auth.transport import requests as grequests
+
+GOOGLE_CLIENT_ID = "897625668141-c53cp1fdekd0du1l21k22jm9qg637912.apps.googleusercontent.com"
+
 
 @csrf_exempt
 def signup(request):
     if request.method == 'POST':
-        print("api called")
         try:
             data = json.loads(request.body)
-
             name = data.get('name')
             phone = data.get('phone')
             password = data.get('password')
             address = data.get('address')
+            role = data.get('role', 'customer').lower()
 
-            # Check if user already exists
             if Customer.objects.filter(phone=phone).exists():
                 return JsonResponse({'status': 'error', 'message': 'User already exists'}, status=400)
 
-            # Create new user
+            
             user = Customer.objects.create(
                 name=name,
                 phone=phone,
                 password=password,
-                address=address
+                address=address,
+                role=role
             )
 
             return JsonResponse({
@@ -35,30 +40,21 @@ def signup(request):
                     'id': user.id,
                     'name': user.name,
                     'phone': user.phone,
-                    'address': user.address
+                    'address': user.address,
+                    'role': user.role
                 }
             })
-
-        except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-
-    return JsonResponse({'status': 'error', 'message': 'Only POST method allowed'}, status=405)
-
-
-
-
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 @csrf_exempt
 def signin(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-
             phone = data.get('phone')
             password = data.get('password')
-         
 
-            # Now use role_obj in filter
             user = Customer.objects.filter(phone=phone, password=password).first()
 
             if user:
@@ -70,71 +66,102 @@ def signin(request):
                         'name': user.name,
                         'phone': user.phone,
                         'address': user.address,
-                        'role': user.role.role  # Get string value
+                        'role': user.role
                     }
                 })
             else:
-                return JsonResponse({'status': 'error', 'message': 'Invalid phone, password, or role'}, status=401)
-
+                return JsonResponse({'status': 'error', 'message': 'Invalid credentials'}, status=401)
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
 
-    return JsonResponse({'status': 'error', 'message': 'Only POST method allowed'}, status=405)
+
+@csrf_exempt
+def google_login(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+
+            if not token:
+                return JsonResponse({'status': 'error', 'message': 'Token missing'}, status=400)
+
+            idinfo = id_token.verify_oauth2_token(token, grequests.Request(), GOOGLE_CLIENT_ID)
+            google_id = idinfo.get('sub')
+            email = idinfo.get('email')
+            name = idinfo.get('name')
+
+            print(f"[GOOGLE VERIFIED]: {name} ({email})")
+
+            user = Customer.objects.filter(google_id=google_id).first()
+
+            if not user:
+                user = Customer.objects.filter(email=email).first()
+                if user:
+                    user.google_id = google_id
+                    user.save()
+                    print(f"[GOOGLE LINK]: Linked to existing user {email}")
+                else:
+                    user = Customer.objects.create(
+                        name=name,
+                        email=email,
+                        google_id=google_id,
+                        password="GOOGLE",
+                        address="",
+                        role="customer"
+                    )
+                    print(f"[GOOGLE REGISTER]: New user created {email}")
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Google login successful',
+                'user': {
+                    'id': user.id,
+                    'name': user.name,
+                    'email': user.email,
+                    'role': user.role,
+                }
+            })
+
+        except ValueError as e:
+            print(f"[GOOGLE ERROR]: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': 'Invalid Google token'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
 @csrf_exempt
 def getallusers(request):
-    members = Customer.objects.select_related("role").all()
+    members = Customer.objects.all()
     data = [
         {
             "id": m.id,
             "name": m.name,
-              "address": m.address,
-              "role_id": m.role.id if m.role else None,   
-            "role_name": m.role.role if m.role else None         }
+            "address": m.address,
+            "role": m.role
+        }
         for m in members
     ]
     return JsonResponse({"data": data})
-
-
-
-
 
 
 @csrf_exempt
 def update_role(request, pk):
     if request.method == "POST":
         try:
-            body = json.loads(request.body)
-            new_role_id = body.get("role_id")
+            data = json.loads(request.body)
+            new_role = data.get("role")
 
-            # Check role exists
-            try:
-                role = Role.objects.get(id=new_role_id)
-            except Role.DoesNotExist:
-                return JsonResponse({"success": False, "message": "Role not found"})
+            with transaction.atomic():
+                customer = Customer.objects.select_for_update().get(id=pk)
+                customer.role = new_role
+                customer.save()
 
-            # Update customer role
-            customer = Customer.objects.get(id=pk)
-            customer.role = role
-            customer.save()
-
-            return JsonResponse({
-                "success": True,
-                "message": "Role updated successfully",
-                "user": {
-                    "id": customer.id,
-                    "name": customer.name,
-                    "address": customer.address,
-                    "role_name": customer.role.role,
-                }
-            })
-
+            return JsonResponse({"success": True, "message": "Role updated"})
         except Customer.DoesNotExist:
-            return JsonResponse({"success": False, "message": "Customer not found"})
-
-    return JsonResponse({"success": False, "message": "Invalid request method"})
-
+            return JsonResponse({"success": False, "message": "User not found"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+    return JsonResponse({"success": False, "message": "Invalid method"})
 
 
 @csrf_exempt
@@ -142,3 +169,17 @@ def get_roles(request):
     if request.method == "GET":
         roles = list(Role.objects.all().values("id", "role"))
         return JsonResponse(roles, safe=False)
+
+
+@csrf_exempt
+def delete_user(request, pk):
+    if request.method == "DELETE":
+        try:
+            customer = Customer.objects.get(id=pk)
+            customer.delete()
+            return JsonResponse({"success": True, "message": "User deleted"})
+        except Customer.DoesNotExist:
+            return JsonResponse({"success": False, "message": "User not found"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+    return JsonResponse({"success": False, "message": "Invalid method"})

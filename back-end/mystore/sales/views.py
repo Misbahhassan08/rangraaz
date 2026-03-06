@@ -14,10 +14,17 @@ from datetime import timedelta
 from django.db.models import Count
 from django.http import JsonResponse
 from collections import Counter
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.utils.timezone import now
 
 
 
 
+
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -41,7 +48,56 @@ class OrderCreateView(View):
                 products=data.get("products", [])
             )
 
-            #  Return full info
+            # --- UPDATED EMAIL LOGIC START ---
+            shipping_info = data.get("shipping_address", {})
+            user_email = shipping_info.get("email")
+            user_name = shipping_info.get("name", getattr(user, "name", "Customer"))
+            
+            if user_email:
+                subject = f"Order Confirmed - Rang Raaz (#{order.order_id})"
+                
+               
+                context = {
+                    'user_name': user_name if user_name else "Customer",
+                    'order_id': order.order_id,
+                    'date': now().strftime('%B %d, %Y'),
+                        'items': [
+                            {
+                                'name': item.get('name'),
+                                'quantity': item.get('quantity'),
+                                'price': item.get('price'),
+                                'image': item.get('image', '')
+                            }
+                            for item in order.products
+                        ] if isinstance(order.products, list) else [],
+                    'total_amount': order.total_price,
+                    'payment_method': "Cash on Delivery" if order.payment_method == "COD" else order.payment_method,
+                    'billing_address': {
+                        'name': user_name,
+                        'street': shipping_info.get("street", "N/A"),
+                        'city': shipping_info.get("city", "N/A"),
+                        'phone': shipping_info.get("phone", "N/A")
+                    }
+                }
+
+              
+                html_message = render_to_string('order_email.html', context)
+                plain_message = strip_tags(html_message) 
+
+                try:
+                    email = EmailMultiAlternatives(
+                        subject=subject,
+                        body=plain_message,
+                        from_email=settings.EMAIL_HOST_USER,
+                        to=[user_email],
+                    )
+                    email.attach_alternative(html_message, "text/html") 
+                    email.send()
+                    print(f"✅ Professional HTML email sent to {user_email}")
+                except Exception as mail_err:
+                    print(f"❌ Mail error: {str(mail_err)}")
+            # --- EMAIL LOGIC END ---
+
             return JsonResponse({
                 "success": True,
                 "message": "Order created successfully",
@@ -55,7 +111,6 @@ class OrderCreateView(View):
                 "products": order.products,
                 "user": {
                     "id": user.id,
-                    # adjust based on your Customer model fields
                     "name": getattr(user, "name", ""),
                     "email": getattr(user, "email", ""), 
                 }
@@ -63,11 +118,8 @@ class OrderCreateView(View):
 
         except Customer.DoesNotExist:
             return JsonResponse({"success": False, "error": "User not found"}, status=400)
-
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)}, status=400)
-
-
 
 @csrf_exempt
 def get_all_orders(request):
@@ -128,6 +180,65 @@ class OrderStatusUpdateView(View):
             order.status = new_status
             order.save()
 
+            # --- STATUS UPDATE EMAIL ---
+            shipping_info = order.shipping_address if isinstance(order.shipping_address, dict) else {}
+            user_email = shipping_info.get("email")
+            user_name = shipping_info.get("name", "Customer")
+
+            if user_email:
+                status_labels = {
+                    "PENDING":    ("Order Received ⏳",    0),
+                    "PROCESSING": ("Order Processing 🔄",  1),
+                    "SHIPPED":    ("Your Order is Shipped! 🚚", 2),
+                    "DELIVERED":  ("Order Delivered! 🎉",  3),
+                    "CANCELLED":  ("Order Cancelled ❌",   -1),
+                }
+                status_label, tracker_step = status_labels.get(new_status, (new_status, 0))
+                subject = f"Rang Raaz Order #{order.order_id} – {status_label}"
+
+                context = {
+                    'user_name': user_name,
+                    'order_id': order.order_id,
+                    'date': order.created_at.strftime('%B %d, %Y'),
+                    'new_status': new_status,
+                    'status_label': status_label,
+                    'tracker_step': tracker_step,
+                    'items': [
+                        {
+                            'name': item.get('name'),
+                            'quantity': item.get('quantity'),
+                            'price': item.get('price'),
+                            'image': item.get('image', ''),
+                        }
+                        for item in order.products
+                    ] if isinstance(order.products, list) else [],
+                    'total_amount': order.total_price,
+                    'payment_method': "Cash on Delivery" if order.payment_method == "COD" else order.payment_method,
+                    'billing_address': {
+                        'name': user_name,
+                        'street': shipping_info.get("street1", shipping_info.get("street", "N/A")),
+                        'city': shipping_info.get("city", "N/A"),
+                        'phone': shipping_info.get("phone", "N/A"),
+                    }
+                }
+
+                html_message = render_to_string('order_email.html', context)
+                plain_message = strip_tags(html_message)
+
+                try:
+                    email = EmailMultiAlternatives(
+                        subject=subject,
+                        body=plain_message,
+                        from_email=settings.EMAIL_HOST_USER,
+                        to=[user_email],
+                    )
+                    email.attach_alternative(html_message, "text/html")
+                    email.send()
+                    print(f"✅ Status update email sent to {user_email} — Status: {new_status}")
+                except Exception as mail_err:
+                    print(f" Mail error: {str(mail_err)}")
+            # --- EMAIL END ---
+
             return JsonResponse({
                 "success": True,
                 "message": f"Order {order_id} status updated",
@@ -137,11 +248,8 @@ class OrderStatusUpdateView(View):
 
         except Order.DoesNotExist:
             return JsonResponse({"success": False, "error": "Order not found"}, status=404)
-
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)}, status=400)
-        
-
 
 
 
@@ -207,3 +315,16 @@ def update_order_shipment(request, order_id):
             return JsonResponse({"success": True})
         except Order.DoesNotExist:
             return JsonResponse({"error": "Order not found"}, status=404)
+ 
+@csrf_exempt
+def delete_order(request, order_id):
+    if request.method == "DELETE":
+        try:
+            order = Order.objects.get(order_id=order_id)
+            order.delete()
+            return JsonResponse({"success": True, "message": "Order deleted successfully"})
+        except Order.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Order not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+    return JsonResponse({"success": False, "error": "Invalid method"}, status=405)   

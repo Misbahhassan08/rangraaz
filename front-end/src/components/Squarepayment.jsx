@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { PaymentForm, CreditCard } from "react-square-web-payments-sdk";
 import URLS from "../urls";
 
-
-const SquarePayment = ({ amount = "10.00" }) => {
+const SquarePayment = ({ amount = "1000", userEmail = "", userName = "" }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [lastPayment, setLastPayment] = useState(null);
@@ -13,23 +12,29 @@ const SquarePayment = ({ amount = "10.00" }) => {
     setMessage("");
 
     try {
-      fetch(URLS.createPayment, {
+      const response = await fetch(URLS.createPayment, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, sourceId: token.token }),
+        body: JSON.stringify({
+          amount,
+          sourceId: token.token,
+          email: userEmail, 
+          name: userName    
+        }),
       });
 
       const data = await response.json();
 
       if (data.success && data.payment) {
         setLastPayment(data.payment);
-        setMessage("✅ Payment successful!");
+        setMessage("✅ Payment successful! Check your email for receipt.");
       } else {
-        setMessage(` Payment failed: ${data.error || "Unknown error"}`);
+        const errorDetail = data.error?.errors?.[0]?.detail || "Payment failed";
+        setMessage(` ${errorDetail}`);
       }
     } catch (err) {
       console.error(err);
-      setMessage(" Something went wrong with payment.");
+      setMessage(" Something went wrong with the connection.");
     } finally {
       setLoading(false);
     }
@@ -38,40 +43,42 @@ const SquarePayment = ({ amount = "10.00" }) => {
   return (
     <div style={{ maxWidth: 500, margin: "0 auto", padding: 20 }}>
       <h2>Square Payment</h2>
-      <p>Sandbox mode — use test cards like 4111 1111 1111 1111</p>
+      <p>Amount to pay: <strong>Rs. {amount}</strong></p>
 
       <PaymentForm
         applicationId="sandbox-sq0idb-zfj02OZgMyPq-I0GBC-a4g"
         locationId="L3WDNCFTQPMF"
         cardTokenizeResponseReceived={handleCardTokenize}
       >
-        <CreditCard />
+        <CreditCard
+          buttonProps={{
+            isLoading: loading,
+            text: `Pay Rs. ${amount}`
+          }}
+        />
       </PaymentForm>
 
-      {loading && <p style={{ color: "#555" }}>Processing payment...</p>}
-
       {message && (
-        <p style={{ color: message.startsWith("✅") ? "#0b8043" : "#b00020" }}>{message}</p>
+        <p style={{
+          marginTop: "10px",
+          padding: "10px",
+          borderRadius: "5px",
+          backgroundColor: message.startsWith("✅") ? "#e6f4ea" : "#fce8e6",
+          color: message.startsWith("✅") ? "#0b8043" : "#b00020"
+        }}>
+          {message}
+        </p>
       )}
 
       {lastPayment && (
         <div style={{ marginTop: 20, padding: 20, border: "1px solid #ccc", borderRadius: 8, background: "#f9f9f9" }}>
-          <h3>Payment Details</h3>
-          <p>
-            <strong>Amount Paid:</strong> ${(lastPayment.amount_money.amount / 100).toFixed(2)}
-          </p>
-          <p>
-            <strong>Status:</strong> {lastPayment.status}
-          </p>
-          <p>
-            <strong>Receipt Number:</strong> {lastPayment.receipt_number}
-          </p>
+          <h3>Order Confirmed!</h3>
+          <p><strong>Status:</strong> {lastPayment.status}</p>
+          <p><strong>Payment ID:</strong> {lastPayment.id}</p>
           {lastPayment.receipt_url && (
-            <p>
-              <a href={lastPayment.receipt_url} target="_blank" rel="noreferrer" style={{ color: "#0070f3", textDecoration: "underline" }}>
-                View Receipt
-              </a>
-            </p>
+            <a href={lastPayment.receipt_url} target="_blank" rel="noreferrer" style={{ color: "#0070f3" }}>
+              Download Receipt
+            </a>
           )}
         </div>
       )}

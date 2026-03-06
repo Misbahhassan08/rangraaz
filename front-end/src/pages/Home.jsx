@@ -32,9 +32,9 @@ const Home = () => {
   return (
     <div className="home-container">
       {/* Hero Slider Section */}
-      <div className="slider-wrapper">
+      <div className="slider-wrapper" style={{ height: "100vh", overflow: "hidden" }}>
         {loading ? (
-          <div className="flex items-center justify-center h-screen bg-gray-50">
+          <div className="flex items-center justify-center h-full bg-gray-50">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-500 animate-pulse font-medium">Loading exclusive collection...</p>
@@ -43,18 +43,19 @@ const Home = () => {
         ) : (
           <Swiper
             className="main-swiper"
+            style={{ height: "100%" }}
             modules={[Mousewheel, Pagination, Autoplay]}
             direction={"vertical"}
             speed={800}
-            loop={true}
-            pagination={{ 
+            loop={false}
+            pagination={{
               clickable: true,
               dynamicBullets: true,
             }}
             mousewheel={{
               thresholdDelta: 50,
-              sensitivity: 1,
               releaseOnEdges: true,
+              sensitivity: 1,
             }}
             autoplay={{
               delay: 5000,
@@ -65,8 +66,8 @@ const Home = () => {
               Object.keys(slides).sort().map((num) => {
                 const currentSlide = slides[num];
                 return (
-                  <SwiperSlide 
-                    key={num} 
+                  <SwiperSlide
+                    key={num}
                     onClick={() => {
                       if (currentSlide?.link && currentSlide.link !== "") {
                         navigate(currentSlide.link);
@@ -74,17 +75,15 @@ const Home = () => {
                     }}
                   >
                     {({ isActive }) => (
-                      <div className="slide-container">
+                      <div className="slide-container" style={{ height: "100vh" }}>
                         <div className="item">
                           <div className={`circle ${isActive ? "animated-circle" : ""}`}></div>
-                          <img 
-                            src={currentSlide?.image} 
-                            alt={`Slide ${num}`} 
+                          <img
+                            src={currentSlide?.image}
+                            alt={`Slide ${num}`}
                             className={`slide-image ${currentSlide?.link ? "cursor-pointer" : "cursor-default"}`}
                             loading="lazy"
                           />
-                          
-                          {/* Optional overlay text - can be enabled if needed */}
                           {isActive && (
                             <div className="slide-overlay">
                               <div className="overlay-content">
@@ -101,7 +100,7 @@ const Home = () => {
               })
             ) : (
               <SwiperSlide>
-                <div className="flex items-center justify-center h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+                <div className="flex items-center justify-center h-full bg-gradient-to-br from-purple-50 to-pink-50">
                   <div className="text-center px-4">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Welcome to Rangraaz</h2>
                     <p className="text-gray-600">Discover our latest collection of Pakistani designer dresses</p>
@@ -119,13 +118,12 @@ const Home = () => {
           <h2 className="content-title">
             Pakistani Designer Dresses Online at Rangraaz
           </h2>
-          
           <div className="content-text">
             <p className="content-paragraph">
-              Deciding what to wear is one of the most difficult tasks for every woman, 
-              no matter how many clothes does she have in her closet. That's because she 
-              runs out of ideas to be stylish every time there is a party or an event she 
-              has to attend. Well, try Rangraaz - a newly launched Pakistani designer 
+              Deciding what to wear is one of the most difficult tasks for every woman,
+              no matter how many clothes does she have in her closet. That's because she
+              runs out of ideas to be stylish every time there is a party or an event she
+              has to attend. Well, try Rangraaz - a newly launched Pakistani designer
               capturing the market and solving the ever complex problem of a woman's life.
             </p>
           </div>

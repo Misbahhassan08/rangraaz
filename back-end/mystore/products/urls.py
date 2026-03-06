@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import create_product, all_data, item_delete, item_update,create_category,create_subcategory,all_categories,subcategories_by_category,create_payment,link_category_subcategory
-from .views import update_slider,get_slider,manage_announcement,sale_products,total_products_count
+from .views import update_slider,get_slider,manage_announcement,sale_products,total_products_count,get_product_by_sku,update_stock
 
 urlpatterns = [
     path('products/create/', create_product, name='create_product'),
@@ -20,5 +20,9 @@ urlpatterns = [
     path('manage_announcement/', manage_announcement, name='manage_announcement'),
     path('sale-items/', sale_products, name='sale_products'),
     path('link-category-subcategory/', link_category_subcategory, name='link_category_subcategory'),
-    path('total-products/', total_products_count, name='total_products_count'),
+    path('total-products/', total_products_count, name='total_products_count'), 
+path('product-by-sku/<str:sku>/', get_product_by_sku, name='get_product_by_sku'),
+path('update-stock/<int:pk>/', update_stock, name='update_stock'),
+
+
 ]

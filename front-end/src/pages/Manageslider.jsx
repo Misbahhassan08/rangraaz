@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import URLS from '../urls';
+import { Image as ImageIcon, Link, Layers, Megaphone, Upload, CheckCircle } from 'lucide-react';
 
 const ManageSlider = () => {
     const [selectedImage, setSelectedImage] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState(null); 
+    const [previewUrl, setPreviewUrl] = useState(null);
     const [slideIndex, setSlideIndex] = useState(1);
     const [redirectLink, setRedirectLink] = useState("/allproducts");
     const [announcement, setAnnouncement] = useState("");
     const [isScrolling, setIsScrolling] = useState(false);
 
-    // Initial Data Fetch
     useEffect(() => {
-      fetch(URLS.manageAnnouncement) 
+        fetch(URLS.manageAnnouncement)
             .then(res => res.json())
             .then(data => {
                 setAnnouncement(data.text);
@@ -22,19 +22,13 @@ const ManageSlider = () => {
 
     const handleUpdateAnnouncement = async () => {
         try {
-           const response = await fetch(URLS.manageAnnouncement, {
+            const response = await fetch(URLS.manageAnnouncement, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    announcement_text: announcement,
-                    is_scrolling: isScrolling 
-                }),
+                body: JSON.stringify({ announcement_text: announcement, is_scrolling: isScrolling }),
             });
-            if (response.ok) {
-                alert("Header settings updated successfully!");
-            } else {
-                alert("Failed to update header.");
-            }
+            if (response.ok) alert("Header settings updated successfully!");
+            else alert("Failed to update header.");
         } catch (error) {
             console.error("Error:", error);
             alert("Connection error!");
@@ -43,145 +37,166 @@ const ManageSlider = () => {
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            setSelectedImage(file);
-            setPreviewUrl(URL.createObjectURL(file)); 
-        }
+        if (file) { setSelectedImage(file); setPreviewUrl(URL.createObjectURL(file)); }
     };
 
     const handleUpload = async () => {
         if (!selectedImage) return alert("Please select image!");
         const formData = new FormData();
         formData.append("sliderImage", selectedImage);
-        formData.append("slideIndex", slideIndex); 
-        formData.append("link", redirectLink); 
-
+        formData.append("slideIndex", slideIndex);
+        formData.append("link", redirectLink);
         try {
-         const response = await fetch(URLS.updateSlider, {
-                method: "POST",
-                body: formData,
-            });
+            const response = await fetch(URLS.updateSlider, { method: "POST", body: formData });
             if (response.ok) {
                 alert(`Slide ${slideIndex} successfully updated!`);
                 setSelectedImage(null);
                 setPreviewUrl(null);
             }
-        } catch (error) {
-            alert("Slider update failed!");
-        }
+        } catch (error) { alert("Slider update failed!"); }
     };
 
+    const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition placeholder-gray-400";
+
     return (
-        <div className="min-h-screen bg-gray-50 ">
-            <div className="container mx-auto px-4 py-8 max-w-7xl">
-                <h1 className="text-2xl md:text-3xl font-bold mb-8 text-gray-800 text-center ">
-                    Manage Slider Images
+        <div className="p-5 bg-gray-50 min-h-screen">
+            {/* Header */}
+            <div className="mb-5">
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    <Layers size={20} className="text-purple-600" />
+                    Manage Slider
                 </h1>
-                
-                {/* Main Content - Centered on all screens */}
-                <div className="flex flex-col items-center justify-center space-y-8">
-                    
-                    {/* Slider Section */}
-                    <div className="w-full max-w-3xl bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 md:p-10 text-center shadow-sm">
-                        <div className="mb-8">
-                            <p className="mb-2 text-gray-600 font-medium">Step 1: Select Slide Number</p>
-                            <select 
-                                className="border border-gray-300 rounded-md p-2 w-40 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer mx-auto"
+                <p className="text-xs text-gray-400 mt-0.5">Update homepage slider images and announcement banner</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                {/* LEFT — Slider Updater */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                        <ImageIcon size={14} className="text-purple-500" />
+                        <h3 className="text-sm font-semibold text-gray-700">Update Slider Image</h3>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        {/* Slide Number */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+                                <span className="inline-flex items-center gap-1"><Layers size={11} /> Slide Number</span>
+                            </label>
+                            <select
                                 value={slideIndex}
                                 onChange={(e) => setSlideIndex(e.target.value)}
+                                className={inputCls}
                             >
-                                <option value="1">Slide 1</option>
-                                <option value="2">Slide 2</option>
-                                <option value="3">Slide 3</option>
-                                <option value="4">Slide 4</option>
+                                {[1, 2, 3, 4].map(n => <option key={n} value={n}>Slide {n}</option>)}
                             </select>
                         </div>
 
-                        <div className="mb-8">
-                            <p className="mb-2 text-gray-600 font-medium">Step 2: Enter Redirect Link (URL)</p>
-                            <input 
+                        {/* Redirect Link */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+                                <span className="inline-flex items-center gap-1"><Link size={11} /> Redirect URL</span>
+                            </label>
+                            <input
                                 type="text"
-                                className="border border-gray-300 rounded-lg p-3 w-full max-w-md mx-auto text-center outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                                className={inputCls}
                                 value={redirectLink}
                                 onChange={(e) => setRedirectLink(e.target.value)}
-                                placeholder="e.g., /allproducts or https://example.com"
+                                placeholder="/allproducts or https://..."
                             />
                         </div>
 
-                        <div className="mb-4">
-                            <p className="mb-4 text-gray-600 font-medium">Step 3: Upload Photo</p>
-                            <div className="flex flex-col items-center justify-center">
-                                <label className="cursor-pointer group">
-                                    <div className="w-40 h-40 md:w-44 md:h-44 border-4 border-dashed border-gray-200 group-hover:border-blue-400 rounded-2xl flex items-center justify-center overflow-hidden transition-all duration-300 bg-gray-50 shadow-inner">
-                                        {previewUrl ? (
-                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="flex flex-col items-center p-4">
-                                                <span className="text-4xl md:text-6xl text-gray-300 group-hover:text-blue-500">+</span>
-                                                <span className="text-xs text-gray-400 mt-2 font-bold uppercase tracking-widest text-center">
-                                                    Select Image
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <input 
-                                        type="file" 
-                                        onChange={handleImageChange} 
-                                        className="hidden" 
-                                        accept="image/*" 
-                                    />
-                                </label>
-                                <p className="text-xs text-gray-400 mt-2">
-                                    Recommended: 1920x1080px or 16:9 ratio
+                        {/* Image Upload */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+                                <span className="inline-flex items-center gap-1"><Upload size={11} /> Slide Image</span>
+                            </label>
+                            <label className="cursor-pointer block">
+                                <div className={`relative border-2 border-dashed rounded-xl overflow-hidden transition-all ${previewUrl ? 'border-purple-300' : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/40'}`} style={{ height: '140px' }}>
+                                    {previewUrl ? (
+                                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-gray-400">
+                                            <ImageIcon size={28} strokeWidth={1} className="text-gray-300" />
+                                            <span className="text-xs font-semibold text-gray-400">Click to upload image</span>
+                                            <span className="text-[10px] text-gray-300">Recommended: 1920×1080px</span>
+                                        </div>
+                                    )}
+                                    {previewUrl && (
+                                        <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition flex items-center justify-center">
+                                            <span className="text-white text-xs font-semibold bg-black/50 px-3 py-1 rounded-lg">Change Image</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <input type="file" onChange={handleImageChange} className="hidden" accept="image/*" />
+                            </label>
+                            {selectedImage && (
+                                <p className="text-xs text-purple-500 mt-1 flex items-center gap-1">
+                                    <CheckCircle size={11} /> {selectedImage.name.substring(0, 30)}
                                 </p>
-                            </div>
+                            )}
                         </div>
 
-                        <button 
-                            type="button" 
+                        <button
                             onClick={handleUpload}
-                            className="mt-8 bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-500/20 font-bold px-8 md:px-14 py-3 md:py-4 rounded-full shadow-lg transition-all hover:scale-105 active:scale-95"
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-purple-100"
                         >
-                            Update Slide {slideIndex} Now
+                            <Upload size={15} />
+                            Update Slide {slideIndex}
                         </button>
                     </div>
+                </div>
 
-                    {/* Announcement Section */}
-                    <div className="w-full max-w-3xl p-6 md:p-8 bg-white rounded-lg shadow-md border border-purple-200">
-                        <h3 className="font-bold text-lg md:text-xl mb-6 text-purple-800 text-center md:text-left">
-                            Update Header Announcement
-                        </h3>
-                        
-                        <div className="flex flex-col gap-6">
-                            <input 
-                                type="text" 
-                                className="w-full border border-gray-300 p-3 md:p-4 rounded-md focus:ring-2 focus:ring-purple-500 outline-none text-sm md:text-base" 
+                {/* RIGHT — Announcement */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-fit">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                        <Megaphone size={14} className="text-purple-500" />
+                        <h3 className="text-sm font-semibold text-gray-700">Header Announcement</h3>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Announcement Text</label>
+                            <input
+                                type="text"
+                                className={inputCls}
                                 value={announcement}
                                 onChange={(e) => setAnnouncement(e.target.value)}
-                                placeholder="E.g. Get 50% SALE FROM ALL ITEMS"
+                                placeholder="e.g. Get 50% OFF on all items!"
                             />
-                            
-                            <div className="flex items-center gap-3 justify-center md:justify-start">
-                                <input 
-                                    type="checkbox" 
-                                    id="scroll-toggle"
-                                    className="w-5 h-5 accent-purple-600 cursor-pointer"
-                                    checked={isScrolling} 
-                                    onChange={(e) => setIsScrolling(e.target.checked)} 
-                                />
-                                <label htmlFor="scroll-toggle" className="text-sm font-medium text-gray-700 cursor-pointer">
-                                    Enable Scrolling (Marquee Effect)
-                                </label>
-                            </div>
-
-                            <button 
-                                type="button" 
-                                onClick={handleUpdateAnnouncement} 
-                                className="bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-500/20 font-bold px-6 py-3 md:py-4 rounded-md transition-all active:scale-95 hover:shadow-lg w-full md:w-auto md:px-8"
-                            >
-                                Update Header Text
-                            </button>
                         </div>
+
+                        <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-xl bg-gray-50 hover:bg-purple-50 transition border border-gray-100 hover:border-purple-200">
+                            <div className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${isScrolling ? 'bg-purple-600' : 'bg-gray-200'}`}>
+                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${isScrolling ? 'left-5' : 'left-0.5'}`} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">Marquee Scrolling</p>
+                                <p className="text-xs text-gray-400">Enable auto-scrolling text effect</p>
+                            </div>
+                            <input
+                                type="checkbox"
+                                className="hidden"
+                                checked={isScrolling}
+                                onChange={(e) => setIsScrolling(e.target.checked)}
+                            />
+                        </label>
+
+                        {/* Preview */}
+                        {announcement && (
+                            <div className="rounded-lg bg-purple-600 px-3 py-2 overflow-hidden">
+                                <p className="text-[10px] text-purple-200 mb-1 font-semibold uppercase tracking-wide">Preview</p>
+                                <p className={`text-white text-xs font-medium truncate ${isScrolling ? 'animate-pulse' : ''}`}>
+                                    {announcement}
+                                </p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleUpdateAnnouncement}
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-purple-100"
+                        >
+                            <Megaphone size={15} />
+                            Update Announcement
+                        </button>
                     </div>
                 </div>
             </div>

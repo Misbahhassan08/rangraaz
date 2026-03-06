@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import URLS from "../urls";
 
 const Login = () => {
@@ -15,13 +17,43 @@ const Login = () => {
 
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
-    setFormData({name: "", phone: "", password: "", address: "" });
+    setFormData({ name: "", phone: "", password: "", address: "" });
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     console.log(formData);
-    
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const googleToken = credentialResponse.credential;
+    if (!googleToken) {
+      alert("Google login failed");
+      return;
+    }
+    try {
+      const res = await fetch(URLS.GOOGLE_LOGIN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: googleToken }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        const role = data.user?.role ? data.user.role.toLowerCase() : "";
+        if (role === "admin") {
+          navigate("/dashboard");
+        } else {
+          navigate("/");
+        }
+      } else {
+        alert("Google login failed: " + data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong during Google login.");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -29,11 +61,9 @@ const Login = () => {
 
     if (isSignUp) {
       try {
-       const response = await fetch(URLS.signup, {
+        const response = await fetch(URLS.signup, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
         });
 
@@ -45,21 +75,28 @@ const Login = () => {
 
         const data = await response.json();
         console.log("Sign-Up Success:", data);
-        toggleForm(); // Switch to Sign-In after Sign-Up
+
+        localStorage.setItem("user", JSON.stringify(data.user || {}));
+
+        const role = data.user?.role ? data.user.role.toLowerCase() : "customer";
+
+        if (role === "admin") {
+          navigate("/dashboard");
+        } else {
+          navigate("/");
+        }
+        toggleForm();
       } catch (error) {
         console.error("Network or server error during Sign-Up:", error);
       }
     } else {
       try {
-      const response = await fetch(URLS.signin, {
+        const response = await fetch(URLS.signin, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             phone: formData.phone,
             password: formData.password,
-            
           }),
         });
 
@@ -72,10 +109,14 @@ const Login = () => {
         const data = await response.json();
         console.log("Sign-In Success:", data);
 
-        if (data.user.role === "Admin") {
+        localStorage.setItem("user", JSON.stringify(data.user || {}));
+
+        // Safe role checking
+        const role = data.user?.role ? data.user.role.toLowerCase() : "customer";
+
+        if (role === "admin") {
           navigate("/dashboard");
-        }
-        else{
+        } else {
           navigate("/");
         }
       } catch (error) {
@@ -88,7 +129,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
-        <h2 className="text-2xl  mb-6 text-center">
+        <h2 className="text-2xl mb-6 text-center">
           {isSignUp ? "Create Account" : "Welcome Back"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -140,6 +181,21 @@ const Login = () => {
             {isSignUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
+
+
+        <div className="flex justify-center mt-4">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => console.log("Google login failed")}
+            type="standard"
+            shape="rectangular"
+            theme="outline"
+            size="large"
+            text={isSignUp ? "signup_with" : "signin_with"}
+            width="300"
+          />
+        </div>
+
 
         <p className="mt-4 text-center text-sm tracking-wider text-gray-600">
           {isSignUp ? "Already have an account?" : "Don't have an account?"}

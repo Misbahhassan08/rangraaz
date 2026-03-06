@@ -13,12 +13,18 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from .models import Slider
 from .models import SiteSettings
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 load_dotenv()
 
 SQUARE_ACCESS_TOKEN = os.getenv("SQUARE_ACCESS_TOKEN")
 SQUARE_LOCATION_ID = os.getenv("SQUARE_LOCATION_ID")
+
+
+
+
 
 @csrf_exempt
 def create_payment(request):
@@ -28,18 +34,19 @@ def create_payment(request):
     try:
         data = json.loads(request.body)
         source_id = data.get("sourceId")
-        amount = data.get("amount")
+        amount = data.get("amount")  
+        user_email = data.get("email") 
+        user_name = data.get("name", "Valued Customer")
 
-        if not source_id or not amount:
-            return JsonResponse({"error": "Missing sourceId or amount"}, status=400)
+        # Basic Validation
+        if not source_id or not amount or not user_email:
+            return JsonResponse({"error": "Missing sourceId, amount, or email"}, status=400)
 
-        print("Received token:", source_id)
-        print("Amount to charge:", amount)
-
+        # Square API Setup
         url = "https://connect.squareupsandbox.com/v2/payments"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {SQUARE_ACCESS_TOKEN}",
+            "Authorization": f"Bearer {settings.SQUARE_ACCESS_TOKEN}",
             "Accept": "application/json"
         }
 
@@ -47,24 +54,50 @@ def create_payment(request):
             "idempotency_key": str(uuid.uuid4()),
             "source_id": source_id,
             "amount_money": {
-            "amount": int(amount), 
-              "currency": "USD"
+                "amount": int(amount), 
+                "currency": "USD"
             },
-
-            "location_id": SQUARE_LOCATION_ID
+            "location_id": settings.SQUARE_LOCATION_ID
         }
 
-        print("Payload to Square:", payload)
-
+        # Request to Square
         response = requests.post(url, json=payload, headers=headers)
         res_json = response.json()
 
-        print("Square response:", json.dumps(res_json, indent=2))
-
         if res_json.get("payment") and res_json["payment"].get("status") in ["COMPLETED", "APPROVED"]:
+            
+            # --- EMAIL LOGIC ---
+            actual_amount = int(amount) / 100 
+            subject = f"Payment Confirmed - Rang Raaz (Ref: {res_json['payment']['id'][:8]})"
+            
+            message = (
+                f"Hi {user_name},\n\n"
+                f"Thank you! Your payment of {actual_amount} USD has been successfully processed via Card.\n"
+                f"Payment ID: {res_json['payment']['id']}\n\n"
+                "Your order is now being processed. We will notify you once it's shipped.\n\n"
+                "Best regards,\n"
+                "Team Rang Raaz"
+            )
+
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.EMAIL_HOST_USER, 
+                    [user_email],            
+                    fail_silently=False,
+                )
+                print(f"✅ Card Payment Email sent successfully to {user_email}")
+            except Exception as mail_err:
+                print(f"❌ Failed to send email: {str(mail_err)}")
+
             return JsonResponse({"success": True, "payment": res_json["payment"]})
+        
         else:
-            return JsonResponse({"success": False, "error": res_json}, status=response.status_code)
+            return JsonResponse({
+                "success": False, 
+                "error": res_json.get("errors", "Payment failed at Square")
+            }, status=400)
 
     except Exception as e:
         print("Exception in create_payment:", str(e))
@@ -75,17 +108,25 @@ def create_payment(request):
 
 
 
+
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_product(request):
     try:
+        sku = request.POST.get('sku', '').strip()
+
+        if len(sku) < 5:
+            return JsonResponse({'error': 'SKU must be at least 5 characters long.'}, status=400)
+
         product = Products.objects.create(
             product_name=request.POST.get('product_name'),
             original_price=float(request.POST.get('original_price')),
             category_id=request.POST.get('category_id'),
             subcategory_id=request.POST.get('subcategory_id'),
             quantity=int(request.POST.get('quantity')),
-            sku=request.POST.get('sku'),
+            sku=sku,
             size=request.POST.get('size'),
             vendor=request.POST.get('vendor'),
             image=request.FILES.get('image'),
@@ -97,7 +138,7 @@ def create_product(request):
         return JsonResponse({'message': 'Product created successfully'}, status=201)
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)  
+        return JsonResponse({'error': str(e)}, status=400)
     
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -444,3 +485,54 @@ def total_products_count(request):
             'success': False, 
             'error': str(e)
         }, status=500)
+        
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_product_by_sku(request, sku):
+    try:
+        product = Products.objects.get(sku=sku)
+        img_url = product.image.url if product.image else ""
+        
+        data = {
+            'id': product.id,
+            'product_name': product.product_name,
+            'sku': product.sku,
+            'quantity': product.quantity,
+            'sell_price': product.sell_price,
+            'image_url': img_url,
+         
+        }
+        return JsonResponse({'success': True, 'product': data}, status=200)
+    except Products.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Product not found'}, status=404)
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def update_stock(request, pk):
+    try:
+        product = Products.objects.get(pk=pk)
+    except Products.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Product not found'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    new_quantity = data.get('quantity')
+
+    if new_quantity is None:
+        return JsonResponse({'success': False, 'error': 'quantity field required'}, status=400)
+
+    if int(new_quantity) < 0:
+        return JsonResponse({'success': False, 'error': 'quantity cannot be negative'}, status=400)
+
+    product.quantity = int(new_quantity)
+    product.save()
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Stock updated successfully',
+        'id': product.id,
+        'new_quantity': product.quantity
+    }, status=200)

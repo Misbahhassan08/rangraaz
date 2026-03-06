@@ -8,8 +8,9 @@ import {
   Image,
   Menu,
   X,
-  Settings,
-  HelpCircle
+  FileText,
+  Barcode,
+  ScanLine,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -51,9 +52,7 @@ const Sidebar = () => {
           <h2 className="text-2xl font-bold tracking-wide">
             Admin<span className="text-white/80">Panel</span>
           </h2>
-          <p className="text-xs text-white/60 mt-1">
-            Management System
-          </p>
+          <p className="text-xs text-white/60 mt-1">Management System</p>
           <div className="w-12 h-0.5 bg-white/20 mx-auto lg:mx-0 mt-3 rounded-full"></div>
         </div>
 
@@ -61,6 +60,7 @@ const Sidebar = () => {
         <nav className="flex flex-col gap-1">
           <NavLink
             to="/dashboard"
+            end
             onClick={() => setIsOpen(false)}
             className={({ isActive }) =>
               `${linkClass} ${isActive ? activeClass : "text-white/80 hover:text-white"}`
@@ -93,6 +93,17 @@ const Sidebar = () => {
           </NavLink>
 
           <NavLink
+            to="/dashboard/pages"
+            onClick={() => setIsOpen(false)}
+            className={({ isActive }) =>
+              `${linkClass} ${isActive ? activeClass : "text-white/80 hover:text-white"}`
+            }
+          >
+            <FileText size={18} />
+            <span>Pages</span>
+          </NavLink>
+
+          <NavLink
             to="/dashboard/users"
             onClick={() => setIsOpen(false)}
             className={({ isActive }) =>
@@ -100,7 +111,7 @@ const Sidebar = () => {
             }
           >
             <Users size={18} />
-            <span>Users</span>
+            <span>Manage Users</span>
           </NavLink>
 
           <NavLink
@@ -113,18 +124,37 @@ const Sidebar = () => {
             <Image size={18} />
             <span>Manage Slider</span>
           </NavLink>
+
+          {/* Barcode Manager */}
+          <NavLink
+            to="/dashboard/barcode-manager"
+            onClick={() => setIsOpen(false)}
+            className={({ isActive }) =>
+              `${linkClass} ${isActive ? activeClass : "text-white/80 hover:text-white"}`
+            }
+          >
+            <Barcode size={18} />
+            <span>Barcode Manager</span>
+          </NavLink>
+
+          {/* Manage Stock / POS */}
+          <NavLink
+            to="/dashboard/pos"
+            onClick={() => setIsOpen(false)}
+            className={({ isActive }) =>
+              `${linkClass} ${isActive ? activeClass : "text-white/80 hover:text-white"}`
+            }
+          >
+            <ScanLine size={18} />
+            <span>Manage Stock</span>
+          </NavLink>
         </nav>
 
         {/* Bottom Section */}
         <div className="mt-auto pt-10 space-y-2">
-          {/* Copyright */}
           <div className="pt-4 mt-4 border-t border-white/20">
-            <p className="text-xs text-white/40 text-center">
-              © 2026 Admin Panel
-            </p>
-            <p className="text-[10px] text-white/30 text-center mt-1">
-              v1.0.0
-            </p>
+            <p className="text-xs text-white/40 text-center">© 2026 Admin Panel</p>
+            <p className="text-[10px] text-white/30 text-center mt-1">v1.0.0</p>
           </div>
         </div>
       </div>

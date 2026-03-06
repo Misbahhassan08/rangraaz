@@ -1,15 +1,17 @@
 from django.db import models
 from cloudinary.models import CloudinaryField
+from django.core.validators import MinLengthValidator
+
 class Products(models.Model):
     product_name = models.CharField(max_length=255)
     product_type = models.CharField(max_length=100)
     image = CloudinaryField('image', null=True, blank=True)
     
     # --- Sale Fields ---
-    original_price = models.FloatField(help_text="The actual price before discount.")
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price in USD")
     discount_percentage = models.PositiveIntegerField(default=0)
     is_sale_on = models.BooleanField(default=False)
-    sell_price = models.FloatField(editable=False)  
+    sell_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     
     quantity = models.PositiveIntegerField()
     
@@ -28,11 +30,15 @@ class Products(models.Model):
     
     size = models.CharField(max_length=50, blank=True, null=True)
     vendor = models.CharField(max_length=255)
-    sku = models.CharField(max_length=100, unique=True)
+    sku = models.CharField(
+        max_length=100,
+        unique=True,
+        validators=[MinLengthValidator(5, message="SKU must be at least 5 characters long.")]
+    )
 
     def save(self, *args, **kwargs):
         orig_price = float(self.original_price or 0)
-        discount = int(self.discount_percentage or 0)
+        discount = float(self.discount_percentage or 0)
 
         if self.is_sale_on and discount > 0:
             discount_amount = (orig_price * discount) / 100
@@ -40,8 +46,7 @@ class Products(models.Model):
         else:
             self.sell_price = orig_price
         
-        super(Products, self).save(*args, **kwargs)     
-        
+        super(Products, self).save(*args, **kwargs)
         
         
         

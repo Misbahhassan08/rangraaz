@@ -15,6 +15,15 @@ import os
 from pathlib import Path  
 from dotenv import load_dotenv
 
+
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'ainee6983@gmail.com' 
+EMAIL_HOST_PASSWORD = 'subh wjnh ojxz fomr' 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -87,7 +96,7 @@ ROOT_URLCONF = "mystore.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+       'DIRS': [BASE_DIR / 'templates'],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -110,6 +119,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+         'OPTIONS': {
+            'timeout': 20,  
+        }
     }
 }
 
@@ -156,9 +168,11 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
-
+CORS_ALLOW_ALL_ORIGINS = True  
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 # settings.py
 SHIPPO_API_KEY = "shippo_test_b8740709eb2a63b7c6a1fb5fb29d93c084e72697"
+
+
+# settings.py mein ye lines add karein
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"

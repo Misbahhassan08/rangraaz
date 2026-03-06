@@ -20,6 +20,9 @@ const URLS = {
   createOrder: `${BASE_URL}/orders/create/`,
   orderDetail: (id) => `${BASE_URL}/orders/${id}/`,
   updateOrderStatus: (id) => `${BASE_URL}/orders/${id}/update_status/`,
+  getProductBySku: (sku) => `${BASE_URL}/products/product-by-sku/${sku}/`,
+  updateStock: (id) => `${BASE_URL}/products/update-stock/${id}/`,
+
 
   // Others
   announcement: `${BASE_URL}/products/manage_announcement/`,
@@ -27,14 +30,17 @@ const URLS = {
   // Authentication
   signup: `${BASE_URL}/signup/`,
   signin: `${BASE_URL}/signin/`,
+  GOOGLE_LOGIN: `${BASE_URL}/google-login/`,
+
   manageAnnouncement: `${BASE_URL}/products/manage_announcement/`,
   updateSlider: `${BASE_URL}/products/update-slider/`,
   // Users & Roles
   getAllUsers: `${BASE_URL}/getallusers/`,
   getRoles: `${BASE_URL}/roles/`,
   updateUserRole: (userId) => `${BASE_URL}/update-role/${userId}/`,
+  deleteUser: (id) => `${BASE_URL}/delete-user/${id}/`,
+  deleteOrder: (id) => `${BASE_URL}/orders/delete/${id}/`,
 
-  
 
 };
 

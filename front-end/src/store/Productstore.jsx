@@ -51,9 +51,20 @@ const productStore = create(
           }
         }),
 
-      removeFromCart: (id) =>
+      removeFromCart: (id, size) =>
         set((state) => ({
-          cart: state.cart.filter((item) => item.id !== id),
+          cart: state.cart.filter(
+            (item) => !(item.id === id && item.size === size)
+          ),
+        })),
+
+      updateQuantity: (id, size, newQuantity) =>
+        set((state) => ({
+          cart: state.cart.map((item) =>
+            item.id === id && item.size === size
+              ? { ...item, quantity: newQuantity }
+              : item
+          ),
         })),
 
       // Computed total price
