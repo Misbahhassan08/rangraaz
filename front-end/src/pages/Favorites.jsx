@@ -1,6 +1,6 @@
 import React from "react";
 import productStore from "../store/Productstore";
-import ProductItem from "../components/ProductItem";
+import ProductItem from "../components/Productitem";
 import { HeartOff } from "lucide-react";
 
 const Favorites = () => {

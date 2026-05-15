@@ -53,7 +53,9 @@ const ManageSlider = () => {
                 setSelectedImage(null);
                 setPreviewUrl(null);
             }
-        } catch (error) { alert("Slider update failed!"); }
+        } catch {
+            alert("Slider update failed!");
+        }
     };
 
     const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition placeholder-gray-400";

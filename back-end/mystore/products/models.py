@@ -138,7 +138,60 @@ class SizeStock(models.Model):
 
     def __str__(self):
         return f"{self.product.product_name} - {self.size}: {self.quantity}"
-    
-    
-    
-    
+
+
+class CustomPage(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+    ]
+
+    title = models.CharField(max_length=160)
+    slug = models.SlugField(max_length=180, unique=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    meta_description = models.TextField(blank=True, null=True)
+    show_in_header = models.BooleanField(default=False)
+    nav_label = models.CharField(max_length=80, blank=True, null=True)
+    nav_parent = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='nav_children'
+    )
+    nav_image = CloudinaryField('image', blank=True, null=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'title']
+
+    def __str__(self):
+        return self.title
+
+
+class PageBlock(models.Model):
+    BLOCK_CHOICES = [
+        ('slider', 'Slider'),
+        ('campaign', 'Campaign'),
+        ('products', 'Products'),
+    ]
+
+    page = models.ForeignKey(CustomPage, on_delete=models.CASCADE, related_name='blocks')
+    block_type = models.CharField(max_length=30, choices=BLOCK_CHOICES)
+    title = models.CharField(max_length=180, blank=True, null=True)
+    subtitle = models.TextField(blank=True, null=True)
+    height = models.PositiveIntegerField(default=520)
+    image = CloudinaryField('image', blank=True, null=True)
+    video = CloudinaryField('video', resource_type='video', blank=True, null=True)
+    link = models.CharField(max_length=500, blank=True, null=True)
+    product_ids = models.JSONField(default=list, blank=True)
+    settings = models.JSONField(default=dict, blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return f"{self.page.title} - {self.block_type}"

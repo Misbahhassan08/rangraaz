@@ -29,15 +29,17 @@ const Home = () => {
     fetchDynamicSlides();
   }, []);
 
+  const sortedSlides = Object.keys(slides).sort();
+
   return (
     <div className="home-container">
       {/* Hero Slider Section */}
-      <div className="slider-wrapper" style={{ height: "100vh", overflow: "hidden" }}>
+      <div className="slider-wrapper">
         {loading ? (
-          <div className="flex items-center justify-center h-full bg-gray-50">
+          <div className="flex h-full items-center justify-center bg-[var(--surface-soft)]">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500 animate-pulse font-medium">Loading exclusive collection...</p>
+              <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-4 border-purple-200 border-t-[var(--brand-pink)]"></div>
+              <p className="animate-pulse text-sm font-light uppercase tracking-[0.22em] text-[var(--text-muted)]">Loading collection</p>
             </div>
           </div>
         ) : (
@@ -58,12 +60,12 @@ const Home = () => {
               sensitivity: 1,
             }}
             autoplay={{
-              delay: 5000,
+              delay: 5200,
               disableOnInteraction: false,
             }}
           >
-            {Object.keys(slides).length > 0 ? (
-              Object.keys(slides).sort().map((num) => {
+            {sortedSlides.length > 0 ? (
+              sortedSlides.map((num, index) => {
                 const currentSlide = slides[num];
                 return (
                   <SwiperSlide
@@ -87,8 +89,17 @@ const Home = () => {
                           {isActive && (
                             <div className="slide-overlay">
                               <div className="overlay-content">
-                                <h3 className="overlay-title">Discover New Collection</h3>
-                                <button className="overlay-button">Shop Now</button>
+                                <div className="slide-kicker">
+                                  <span>{String(index + 1).padStart(2, "0")}</span>
+                                  <span className="h-px w-10 bg-white/45" />
+                                  <span>{String(sortedSlides.length).padStart(2, "0")}</span>
+                                </div>
+                                <p className="slide-eyebrow">Embrace colors Made for you!</p>
+                                <h3 className="overlay-title font-display">Luxury color, tailored for your moment</h3>
+                                <p className="slide-copy">
+                                  A softer boutique experience for expressive Pakistani designer wear.
+                                </p>
+                                <button className="overlay-button">Explore Collection</button>
                               </div>
                             </div>
                           )}
@@ -100,10 +111,12 @@ const Home = () => {
               })
             ) : (
               <SwiperSlide>
-                <div className="flex items-center justify-center h-full bg-gradient-to-br from-purple-50 to-pink-50">
-                  <div className="text-center px-4">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Welcome to Rangraaz</h2>
-                    <p className="text-gray-600">Discover our latest collection of Pakistani designer dresses</p>
+                <div className="fallback-hero">
+                  <img src="/img/image4.webp" alt="" className="fallback-hero-image" />
+                  <div className="fallback-hero-panel brand-glass">
+                    <img src="/img/logo.png" alt="Rang Raaz" className="mx-auto mb-6 h-20 w-auto animate-float-soft" />
+                    <h2 className="mb-4 font-display text-3xl font-medium brand-gradient-text md:text-5xl">Embrace colors Made for you!</h2>
+                    <p className="mx-auto max-w-xl text-[var(--text-muted)]">Discover curated Pakistani designer dresses with expressive color, refined cuts, and occasion-ready details.</p>
                   </div>
                 </div>
               </SwiperSlide>
@@ -115,16 +128,15 @@ const Home = () => {
       {/* Content Section */}
       <div className="content-wrapper">
         <div className="content-container">
+          <p className="mb-4 text-center text-xs font-light uppercase tracking-[0.28em] text-[var(--brand-pink)]">Rang Raaz</p>
           <h2 className="content-title">
-            Pakistani Designer Dresses Online at Rangraaz
+            Embrace colors Made for you!
           </h2>
           <div className="content-text">
             <p className="content-paragraph">
-              Deciding what to wear is one of the most difficult tasks for every woman,
-              no matter how many clothes does she have in her closet. That's because she
-              runs out of ideas to be stylish every time there is a party or an event she
-              has to attend. Well, try Rangraaz - a newly launched Pakistani designer
-              capturing the market and solving the ever complex problem of a woman's life.
+              Rang Raaz brings expressive Pakistani designer wear into a softer,
+              more personal shopping experience. From daily elegance to occasion-ready
+              color, every piece is curated to feel graceful, vivid, and made for you.
             </p>
           </div>
         </div>

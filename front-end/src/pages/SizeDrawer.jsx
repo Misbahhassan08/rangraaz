@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import { X, ShoppingBag } from "lucide-react";
 import productStore from "../store/Productstore";
-import { useNavigate } from "react-router-dom";
 
 
 const SizeDrawer = ({ product, onClose }) => {
   const [selectedSize, setSelectedSize] = useState(null);
   const addToCart = productStore((state) => state.addToCart);
-  const navigate = useNavigate();
 
   if (!product) return null;
 

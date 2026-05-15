@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import ProductItem from "../components/ProductItem";
+import ProductItem from "../components/Productitem";
 import productStore from "../store/Productstore";
 import { HeartPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import URLS from "../urls";
@@ -106,16 +106,19 @@ const Allproducts = () => {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto p-4 md:p-8 font-sans antialiased">
-      <h1 className="text-center text-2xl font-bold tracking-widest mb-10 uppercase text-gray-800">
+    <div className="mx-auto max-w-[1440px] px-4 py-10 font-sans antialiased md:px-8">
+      <div className="mb-10 text-center">
+        <p className="mb-3 text-xs font-light uppercase tracking-[0.28em] text-[var(--brand-pink)]">Collection</p>
+        <h1 className="font-display text-4xl font-medium text-[var(--text-main)] md:text-5xl">
         {categoryParam || "All Products"}
-      </h1>
+        </h1>
+      </div>
 
       {/* TOOLBAR: Grid controls and Show Amount */}
-      <div className="flex flex-col md:flex-row items-center justify-between mb-8 border-b border-gray-100 pb-5 gap-4">
+      <div className="brand-glass mb-10 flex flex-col items-center justify-between gap-4 rounded-3xl px-5 py-4 md:flex-row">
 
         {/* Left: Items count */}
-        <p className="text-sm text-gray-400 font-medium">
+        <p className="text-sm font-light text-[var(--text-muted)]">
           {filteredProducts.length} items found
         </p>
 
@@ -123,15 +126,15 @@ const Allproducts = () => {
         <div className="flex items-center gap-6">
 
           {/* Grid Toggle - better UI */}
-          <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-0.5">
+          <div className="flex items-center gap-0.5 rounded-2xl bg-[var(--surface-soft)] p-1">
             {[2, 3, 4, 6].map((num) => (
               <button
                 key={num}
                 onClick={() => setGridCols(num)}
                 style={{ cursor: 'pointer' }}
                 className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-200  cursor-pointer${gridCols === num
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-400 hover:text-gray-600"
+                    ? "bg-[var(--surface-main)] text-[var(--text-main)] shadow-sm"
+                    : "text-[var(--text-soft)] hover:text-[var(--text-main)]"
                   }`}
               >
                 {renderIcon(num)}
@@ -141,13 +144,13 @@ const Allproducts = () => {
 
           {/* Show Amount - same as before */}
           <div className="flex flex-col items-start">
-            <span className="text-[10px] font-bold uppercase text-blue-500 mb-0.5 tracking-tighter">Show Amount</span>
+            <span className="mb-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--brand-pink)]">Show Amount</span>
             <input
               type="number"
               min="1"
               value={productsPerPage}
               onChange={(e) => setProductsPerPage(e.target.value)}
-              className="w-20 h-9 border-2 border-blue-100 rounded-lg text-center text-sm font-bold focus:border-blue-500 outline-none transition-all"
+              className="h-9 w-20 rounded-xl border border-[var(--border-soft)] bg-[var(--surface-main)] text-center text-sm font-medium text-[var(--text-main)] outline-none transition-all focus:border-[var(--brand-pink)]"
             />
           </div>
 
@@ -155,12 +158,12 @@ const Allproducts = () => {
       </div>
 
       {/* PRODUCT GRID */}
-      <div className={`grid ${gridClass} gap-x-4 gap-y-12 transition-all duration-500 ease-in-out`}>
+      <div className={`grid ${gridClass} gap-x-5 gap-y-12 transition-all duration-500 ease-in-out`}>
         {currentProducts.map((product) => (
           <div key={product.id} className="relative group">
             <button
               onClick={() => toggleFavorite(product)}
-              className="absolute top-4 right-4 z-10 p-2 bg-white/90 shadow-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
+              className="absolute right-4 top-4 z-10 rounded-full bg-[var(--surface-card)] p-2 opacity-0 shadow-sm transition-all duration-300 group-hover:opacity-100"
             >
               <HeartPlus
                 className={`${favorites.some((f) => f.id === product.id) ? "text-red-500 fill-red-500" : "text-gray-400"}`}
@@ -181,12 +184,12 @@ const Allproducts = () => {
 
       {/* PAGINATION SECTION: Pages, Next, Prev */}
       {totalPages > 1 && (
-        <div className="mt-20 flex flex-col items-center gap-4 border-t border-gray-100 pt-10">
+        <div className="mt-20 flex flex-col items-center gap-4 border-t border-[var(--border-soft)] pt-10">
           <div className="flex items-center gap-2">
             <button
               disabled={currentPage === 1}
               onClick={() => handlePageChange(currentPage - 1)}
-              className="flex items-center gap-1 p-2 text-gray-400 hover:text-black disabled:opacity-20 transition-all"
+              className="flex items-center gap-1 p-2 text-[var(--text-soft)] transition-all hover:text-[var(--text-main)] disabled:opacity-20"
             >
               <ChevronLeft size={18} /> <span className="text-sm font-medium">Prev</span>
             </button>
@@ -197,8 +200,8 @@ const Allproducts = () => {
                   key={page}
                   onClick={() => handlePageChange(page)}
                   className={`w-10 h-10 rounded-md text-sm font-bold transition-all ${currentPage === page
-                      ? 'bg-slate-800 text-white shadow-md'
-                      : 'text-gray-400 hover:bg-gray-100 hover:text-black'
+                      ? 'bg-[var(--brand-purple)] text-white shadow-md'
+                      : 'text-[var(--text-soft)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-main)]'
                     }`}
                 >
                   {page}
@@ -209,13 +212,13 @@ const Allproducts = () => {
             <button
               disabled={currentPage === totalPages}
               onClick={() => handlePageChange(currentPage + 1)}
-              className="flex items-center gap-1 p-2 text-gray-400 hover:text-black disabled:opacity-20 transition-all"
+              className="flex items-center gap-1 p-2 text-[var(--text-soft)] transition-all hover:text-[var(--text-main)] disabled:opacity-20"
             >
               <span className="text-sm font-medium">Next</span> <ChevronRight size={18} />
             </button>
           </div>
 
-          <p className="text-xs text-gray-400 italic">
+          <p className="text-xs text-[var(--text-soft)] italic">
             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
           </p>
         </div>

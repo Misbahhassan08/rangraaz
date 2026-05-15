@@ -1,66 +1,87 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Handbag, HeartPlus, User, Search, LayoutDashboard, Menu, X, LogOut } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Moon,
+  Search,
+  ShoppingBag,
+  Sun,
+  UserRound,
+  X,
+} from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import productStore from "../store/Productstore";
 import URLS from "../urls";
+
+const collections = [
+  { name: "Ally's", id: "ALLY'S", image: "/img/image1.webp", subs: ["Fancy", "Casual"] },
+  { name: "Heera's", id: "HEERA'S", image: "/img/image2.webp", subs: ["Fancy", "Casual"] },
+  { name: "Rangraaz", id: "Rangraaz", image: "/img/image3.webp", subs: ["2 Piece", "3 Piece", "Maxi"] },
+];
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showInput, setShowInput] = useState(false);
   const [query, setQuery] = useState("");
-  const [announcement, setAnnouncement] = useState("Loading deals...");
+  const [showSearch, setShowSearch] = useState(false);
+  const [announcement, setAnnouncement] = useState("Embrace colors Made for you!");
   const [isScrolling, setIsScrolling] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const inputRef = useRef(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+  const [customPages, setCustomPages] = useState([]);
+  const searchRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
   const cart = productStore((state) => state.cart);
-  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
   const favorites = productStore((state) => state.favorites);
+  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  const storedUser = localStorage.getItem("user");
-  const user = (storedUser && storedUser !== "undefined" && storedUser !== "null") 
-               ? JSON.parse(storedUser) 
-               : null;
-  
-  const isAdmin = user && user.role?.toLowerCase() === "admin";
-
-  const handleUserClick = () => {
-    if (user) {
-      if (window.confirm("Do you want to Logout?")) {
-        localStorage.removeItem("user");
-        navigate("/login");
-        window.location.reload();
-      }
-    } else {
-      navigate("/login");
+  const user = (() => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      return storedUser && storedUser !== "undefined" && storedUser !== "null"
+        ? JSON.parse(storedUser)
+        : null;
+    } catch {
+      return null;
     }
-  };
+  })();
+
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     fetch(URLS.announcement)
       .then((res) => res.json())
       .then((data) => {
-        setAnnouncement(data.text);
-        setIsScrolling(data.is_scrolling);
+        setAnnouncement(data.text || "Embrace colors Made for you!");
+        setIsScrolling(Boolean(data.is_scrolling));
       })
       .catch((err) => console.error("Error fetching announcement:", err));
   }, []);
 
-  const handleSearchClick = () => setShowInput(true);
-
-  const handleSearch = () => {
-    if (query.trim()) {
-      navigate(`/allproducts?search=${query}`);
-      setShowInput(false);
-    }
-  };
+  useEffect(() => {
+    fetch(URLS.headerPages)
+      .then((res) => res.json())
+      .then((data) => setCustomPages(data.data || []))
+      .catch((err) => console.error("Error fetching header pages:", err));
+  }, []);
 
   useEffect(() => {
-    if (showInput && inputRef.current) inputRef.current.focus();
-  }, [showInput]);
+    if (showSearch) searchRef.current?.focus();
+  }, [showSearch]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setActiveDropdown(null);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -72,252 +93,265 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [navigate]);
-
-  const categories = [
-    { name: "ALLY'S", id: "ALLY'S", image: "/img/dress.jpg" },
-    { name: "HEERA'S", id: "HEERA'S", image: "/img/dress.jpg" },
-    { name: "RANGRAAZ", id: "Rangraaz", image: "/img/dress.jpg" }
-  ];
-
   const isSubActive = (catId, sub) => {
     const params = new URLSearchParams(location.search);
     return params.get("category") === catId && params.get("subcategory") === sub;
   };
 
-  return (
-    <div className="w-full">
-      {/* --- 1. Announcement Bar --- */}
-      <div className="bg-purple-300 py-2 px-4 text-[8px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] uppercase font-bold overflow-hidden relative h-8 sm:h-10 flex items-center shadow-sm">
-        <div className={`whitespace-nowrap ${isScrolling ? "absolute animate-marquee-inline" : "w-full text-center"}`}>
-          <span>{announcement}</span>
-          {isScrolling && <span className="ml-[50px] sm:ml-[100px]">{announcement}</span>}
-        </div>
-      </div>
+  const submitSearch = () => {
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return;
+    navigate(`/allproducts?search=${encodeURIComponent(cleanQuery)}`);
+    setShowSearch(false);
+  };
 
-      {/* --- 2. Main Navigation Bar --- */}
-      <div className="flex justify-between items-center py-3 px-4 sm:px-6 md:px-10 bg-white shadow-sm sticky top-0 z-50">
+  const handleUserClick = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    if (window.confirm("Do you want to logout?")) {
+      localStorage.removeItem("user");
+      navigate("/login");
+      window.location.reload();
+    }
+  };
 
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+  const iconButton =
+    "relative grid h-10 w-10 place-items-center rounded-full border border-[var(--border-soft)] bg-[var(--surface-glass)] text-[var(--text-muted)] transition-all hover:-translate-y-0.5 hover:border-[var(--brand-pink)] hover:text-[var(--brand-pink)] hover:shadow-lg";
 
-        <div className={`cursor-pointer transition-transform hover:scale-105 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'} lg:opacity-100`}>
-          <Link to="/">
-            <img src="/img/logo.png" alt="logo" className="h-8 sm:h-10 md:h-12 w-auto" />
-          </Link>
-        </div>
-
-        <nav className="hidden lg:block flex-1 mx-8">
-          <ul className="flex justify-center space-x-6 xl:space-x-10 text-[10px] xl:text-[11px] tracking-[0.2em] font-bold items-center text-gray-800">
-            {categories.map((cat) => {
-              const subList = cat.id === "Rangraaz"
-                ? ["2 Piece", "3 Piece", "Maxi"]
-                : ["Fancy", "Casual"];
-
-              return (
-                <li key={cat.id} className="relative group py-2">
-                  <Link
-                    to={`/allproducts?category=${cat.id}`}
-                    className="cursor-pointer hover:text-purple-600 transition-all duration-300 flex items-center gap-1 whitespace-nowrap"
-                  >
-                    {cat.name}
-                  </Link>
-
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 hidden group-hover:block z-50 pt-2 w-[350px] xl:w-[400px]">
-                    <div className="bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100 flex">
-                      <div className="w-2/5 overflow-hidden">
-                        <img
-                          src={cat.image}
-                          alt="collection"
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      </div>
-                      <div className="w-3/5 p-4 xl:p-6 bg-white">
-                        <p className="text-[8px] xl:text-[9px] text-purple-400 mb-3 xl:mb-4 tracking-[0.2em] uppercase border-b border-gray-100 pb-2">
-                          {cat.name} Essentials
-                        </p>
-                        <ul className="space-y-1">
-                          {subList.map((sub) => {
-                            const active = isSubActive(cat.id, sub);
-                            return (
-                              <li key={sub}>
-                                <Link
-                                  to={`/allproducts?category=${cat.id}&subcategory=${sub}`}
-                                  className={`
-                                    flex items-center justify-between
-                                    text-[11px] xl:text-[13px] font-medium
-                                    px-3 py-2 rounded-lg
-                                    transition-all duration-200
-                                     uppercase
-                                    ${active
-                                      ? "bg-purple-100 text-purple-700 font-bold border-l-[3px] border-purple-500 pl-4"
-                                      : "text-gray-500 hover:text-purple-600 hover:bg-purple-50 hover:pl-5"
-                                    }
-                                  `}
-                                >
-                                  <span>{sub}</span>
-                                  {active && (
-                                    <span className="bg-purple-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center ml-2 flex-shrink-0">
-                                      ✓
-                                    </span>
-                                  )}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-            <li>
-              <Link to="/allproducts?sale=true" className="text-red-600 hover:text-red-700 transition-colors whitespace-nowrap">SALE</Link>
-            </li>
-          </ul>
-        </nav>
-
-        {/* --- Right Side Icons --- */}
-        <div className="flex gap-3 sm:gap-4 md:gap-6 items-center relative">
-
-          {isAdmin && (
-            <LayoutDashboard
-              className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer text-purple-600 hover:text-purple-800 transition-colors"
-              strokeWidth={1.5}
-              onClick={() => navigate("/dashboard")}
-            />
+  const renderCollections = (mobile = false) => (
+    <div className={mobile ? "space-y-3" : "flex items-center gap-1"}>
+      {collections.map((cat) => (
+        <div key={cat.id} className={mobile ? "rounded-2xl border border-[var(--border-soft)]" : "group relative py-4"}>
+          {mobile ? (
+            <button
+              onClick={() => setActiveDropdown(activeDropdown === cat.id ? null : cat.id)}
+              className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--text-main)]"
+            >
+              <span>{cat.name}</span>
+              <span className="text-lg text-[var(--brand-pink)]">{activeDropdown === cat.id ? "-" : "+"}</span>
+            </button>
+          ) : (
+            <Link
+              to={`/allproducts?category=${cat.id}`}
+              className="rounded-full px-4 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-main)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--brand-pink)]"
+            >
+              {cat.name}
+            </Link>
           )}
 
-          <div className="flex items-center">
-            <Search
-              className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer text-gray-500 hover:text-black transition-colors"
-              strokeWidth={1.5}
-              onClick={handleSearchClick}
-            />
-            {showInput && (
+          <div
+            className={
+              mobile
+                ? `${activeDropdown === cat.id ? "block" : "hidden"} px-3 pb-3`
+                : "invisible absolute left-1/2 top-full z-50 w-[430px] -translate-x-1/2 translate-y-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+            }
+          >
+            <div className={mobile ? "space-y-2" : "brand-menu overflow-hidden rounded-3xl"}>
+              {!mobile && (
+                <div className="relative h-44 overflow-hidden">
+                  <img src={cat.image} alt={cat.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <p className="absolute bottom-4 left-5 font-display text-2xl font-medium text-white">{cat.name}</p>
+                </div>
+              )}
+              <div className={mobile ? "space-y-1" : "grid grid-cols-2 gap-2 p-4"}>
+                {cat.subs.map((sub) => {
+                  const active = isSubActive(cat.id, sub);
+                  return (
+                    <Link
+                      key={sub}
+                      to={`/allproducts?category=${cat.id}&subcategory=${sub}`}
+                      className={`rounded-2xl px-4 py-3 text-sm transition-all ${
+                        active
+                          ? "bg-[var(--brand-pink)] text-white shadow-lg"
+                          : "bg-[var(--surface-soft)] text-[var(--text-muted)] hover:bg-[var(--brand-purple)] hover:text-white"
+                      }`}
+                    >
+                      {sub}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+      <Link
+        to="/allproducts?sale=true"
+        className={mobile
+          ? "block rounded-2xl bg-red-500 px-4 py-3 text-sm font-semibold text-white"
+          : "rounded-full bg-red-500 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600"
+        }
+      >
+        Sale
+      </Link>
+      {customPages
+        .filter((page) => !page.nav_parent)
+        .map((page) => {
+          const children = customPages.filter((child) => child.nav_parent === page.id);
+          return (
+            <div key={page.id} className={mobile ? "rounded-2xl border border-[var(--border-soft)]" : "group relative py-4"}>
+              {mobile ? (
+                children.length > 0 ? (
+                  <button
+                    onClick={() => setActiveDropdown(activeDropdown === `page-${page.id}` ? null : `page-${page.id}`)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--text-main)]"
+                  >
+                    <span>{page.nav_label}</span>
+                    <span className="text-lg text-[var(--brand-pink)]">{activeDropdown === `page-${page.id}` ? "-" : "+"}</span>
+                  </button>
+                ) : (
+                  <Link to={`/page/${page.slug}`} className="block px-4 py-3 text-sm font-medium text-[var(--text-main)]">
+                    {page.nav_label}
+                  </Link>
+                )
+              ) : (
+                <Link
+                  to={`/page/${page.slug}`}
+                  className="rounded-full px-4 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-main)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--brand-pink)]"
+                >
+                  {page.nav_label}
+                </Link>
+              )}
+
+              {children.length > 0 && (
+                <div
+                  className={
+                    mobile
+                      ? `${activeDropdown === `page-${page.id}` ? "block" : "hidden"} px-3 pb-3`
+                      : "invisible absolute left-1/2 top-full z-50 w-[380px] -translate-x-1/2 translate-y-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+                  }
+                >
+                  <div className={mobile ? "space-y-2" : "brand-menu overflow-hidden rounded-3xl p-3"}>
+                    {!mobile && page.nav_image_url && (
+                      <img src={page.nav_image_url} alt={page.nav_label} className="mb-3 h-36 w-full rounded-2xl object-cover" />
+                    )}
+                    <div className="space-y-2">
+                      {children.map((child) => (
+                        <Link
+                          key={child.id}
+                          to={`/page/${child.slug}`}
+                          className="block rounded-2xl bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--text-muted)] hover:bg-[var(--brand-purple)] hover:text-white"
+                        >
+                          {child.nav_label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+    </div>
+  );
+
+  return (
+    <header className="sticky top-0 z-50">
+      <div className="relative flex h-9 items-center overflow-hidden bg-[linear-gradient(100deg,#2b0752,#8122e0,#f02ccb)] px-4 text-[10px] font-light uppercase tracking-[0.22em] text-white">
+        <div className={isScrolling ? "absolute animate-marquee-inline whitespace-nowrap" : "w-full text-center"}>
+          <span>{announcement}</span>
+          {isScrolling && <span className="ml-24">{announcement}</span>}
+        </div>
+      </div>
+
+      <div className="brand-nav border-b border-[var(--border-soft)] px-4 py-3 backdrop-blur-2xl sm:px-6 lg:px-10">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
+          <button className={iconButton + " lg:hidden"} onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
+            <Menu size={19} />
+          </button>
+
+          <Link to="/" className="group flex min-w-fit items-center gap-3">
+            <img src="/img/logo.png" alt="Rang Raaz" className="h-11 w-auto transition duration-300 group-hover:scale-[1.02] md:h-14" />
+            <span className="hidden border-l border-[var(--border-soft)] pl-3 text-[10px] font-light uppercase leading-4 tracking-[0.22em] text-[var(--text-muted)] xl:block">
+              Embrace colors<br />Made for you!
+            </span>
+          </Link>
+
+          <nav className="hidden flex-1 justify-center lg:flex">{renderCollections()}</nav>
+
+          <div className="flex items-center gap-2">
+            <div className="relative hidden sm:block">
               <input
-                ref={inputRef}
-                type="text"
+                ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                onBlur={() => setTimeout(() => setShowInput(false), 200)}
-                placeholder="Search..."
-                className="absolute right-full mr-2 transition-all duration-300 border-b border-gray-300 px-2 py-1 w-32 sm:w-40 text-[10px] sm:text-[12px] focus:outline-none focus:border-purple-600"
+                onKeyDown={(e) => e.key === "Enter" && submitSearch()}
+                placeholder="Search colors, styles..."
+                className={`h-10 rounded-full border border-[var(--border-soft)] bg-[var(--surface-glass)] px-4 pr-10 text-sm font-light text-[var(--text-main)] outline-none transition-all placeholder:text-[var(--text-soft)] focus:w-64 focus:border-[var(--brand-pink)] ${showSearch ? "w-64" : "w-11 cursor-pointer"}`}
+                onFocus={() => setShowSearch(true)}
               />
-            )}
-          </div>
+              <Search
+                size={17}
+                onClick={() => (showSearch ? submitSearch() : setShowSearch(true))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[var(--text-muted)]"
+              />
+            </div>
 
-          <div className="relative group">
-            <HeartPlus
-              className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer ${favorites.length > 0 ? "text-red-500" : "text-gray-500 hover:text-red-400"}`}
-              strokeWidth={1.5}
-              onClick={() => navigate("/favorites")}
-            />
-            {favorites.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] sm:text-[10px] font-bold rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center shadow-md">
-                {favorites.length}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1 group cursor-pointer" onClick={handleUserClick}>
-            <User
-              className={`w-4 h-4 sm:w-5 sm:h-5 ${user ? "text-purple-600" : "text-gray-500 hover:text-black"} transition-colors`}
-              strokeWidth={1.5}
-            />
-            {user && <span className="hidden sm:block text-[10px] font-bold text-gray-600">{user.name?.split(' ')[0]}</span>}
-          </div>
-
-          <Link to="/cart" className="relative group">
-            <Handbag
-              className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 group-hover:text-purple-600 transition-colors"
-              strokeWidth={1.5}
-            />
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-[8px] sm:text-[10px] font-bold rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center shadow-md">
-                {totalItems}
-              </span>
-            )}
-          </Link>
-        </div>
-      </div>
-
-      {/* --- Mobile Menu --- */}
-      <div
-        className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 lg:hidden ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
-        onClick={() => setMobileMenuOpen(false)}
-      />
-
-      <div
-        ref={mobileMenuRef}
-        className={`fixed top-0 left-0 h-full w-4/5 max-w-sm bg-white z-50 transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
-      >
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-8">
-            <img src="/img/logo.png" alt="logo" className="h-8 w-auto" />
-            <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} /></button>
-          </div>
-
-          <div className="space-y-6">
-            {categories.map((cat) => {
-              const subList = cat.id === "Rangraaz"
-                ? ["2 Piece", "3 Piece", "Maxi"]
-                : ["Fancy", "Casual"];
-              return (
-                <div key={cat.id} className="border-b border-gray-100 pb-4">
-                  <button
-                    onClick={() => setActiveDropdown(activeDropdown === cat.id ? null : cat.id)}
-                    className="w-full flex justify-between items-center text-left font-bold text-gray-800 hover:text-purple-600 transition-colors"
-                  >
-                    <span>{cat.name}</span>
-                    <span className="text-xl">{activeDropdown === cat.id ? '−' : '+'}</span>
-                  </button>
-                  {activeDropdown === cat.id && (
-                    <div className="mt-3 pl-2 space-y-1">
-                      {subList.map((sub) => {
-                        const active = isSubActive(cat.id, sub);
-                        return (
-                          <Link
-                            key={sub}
-                            to={`/allproducts?category=${cat.id}&subcategory=${sub}`}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all
-                              ${active
-                                ? "bg-purple-100 text-purple-700 font-bold border-l-[3px] border-purple-500"
-                                : "text-gray-600 hover:bg-purple-50 hover:text-purple-600"
-                              }`}
-                          >
-                            <span>{sub}</span>
-                            {active && (
-                              <span className="bg-purple-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">
-                                ✓
-                              </span>
-                            )}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            <Link to="/allproducts?sale=true" className="block text-red-600 font-bold py-2" onClick={() => setMobileMenuOpen(false)}>SALE</Link>
+            <button
+              className={iconButton}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
 
             {isAdmin && (
-              <Link to="/dashboard" className="block text-purple-600 font-bold py-2 border-t pt-4" onClick={() => setMobileMenuOpen(false)}>ADMIN DASHBOARD</Link>
+              <button className={iconButton} onClick={() => navigate("/dashboard")} aria-label="Dashboard">
+                <LayoutDashboard size={18} />
+              </button>
             )}
+
+            <button className={iconButton} onClick={() => navigate("/favorites")} aria-label="Favorites">
+              <Heart size={18} className={favorites.length > 0 ? "fill-red-500 text-red-500" : ""} />
+              {favorites.length > 0 && <span className="brand-count">{favorites.length}</span>}
+            </button>
+
+            <button className={iconButton} onClick={handleUserClick} aria-label="Account">
+              {user ? <LogOut size={18} /> : <UserRound size={18} />}
+            </button>
+
+            <Link to="/cart" className={iconButton} aria-label="Cart">
+              <ShoppingBag size={18} />
+              {totalItems > 0 && <span className="brand-count">{totalItems}</span>}
+            </Link>
           </div>
         </div>
       </div>
-    </div>
+
+      <div
+        className={`fixed inset-0 z-40 bg-black/45 backdrop-blur-sm transition lg:hidden ${mobileMenuOpen ? "visible opacity-100" : "invisible opacity-0"}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+      <aside
+        ref={mobileMenuRef}
+        className={`fixed left-0 top-0 z-50 h-full w-[88%] max-w-sm border-r border-[var(--border-soft)] bg-[var(--surface-main)] p-5 shadow-2xl transition-transform duration-300 lg:hidden ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        <div className="mb-8 flex items-center justify-between">
+          <img src="/img/logo.png" alt="Rang Raaz" className="h-12 w-auto" />
+          <button className={iconButton} onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="mb-5">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitSearch()}
+            placeholder="Search the store"
+            className="w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--text-main)] outline-none"
+          />
+        </div>
+        {renderCollections(true)}
+        {isAdmin && (
+          <Link to="/dashboard" className="mt-4 block rounded-2xl border border-[var(--border-soft)] px-4 py-3 text-sm font-medium text-[var(--brand-pink)]">
+            Admin Dashboard
+          </Link>
+        )}
+      </aside>
+    </header>
   );
 };
 

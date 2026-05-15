@@ -271,13 +271,13 @@ const Adminshome = () => {
               <div className="flex space-x-4">
                 <button
                   onClick={() => setActiveTab('sales')}
-                  className={`text-xs font-bold transition-all py-1 PKR{activeTab === 'sales' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`text-xs font-bold transition-all py-1 ${activeTab === 'sales' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   Sales
                 </button>
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className={`text-xs font-bold transition-all py-1 PKR{activeTab === 'orders' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`text-xs font-bold transition-all py-1 ${activeTab === 'orders' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   Orders
                 </button>
@@ -308,14 +308,18 @@ const Adminshome = () => {
   );
 };
 
-const StatCard = ({ title, value, icon: Icon, colorClass, bgColorClass, loading }) => (
-  <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-3 h-24 hover:shadow-md transition-shadow">
-    <div className={`PKR{bgColorClass} p-3 rounded-xl`}><Icon className={colorClass} size={20} /></div>
-    <div className="overflow-hidden">
-      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider truncate">{title}</p>
-      <h3 className="text-xl font-black text-gray-900 mt-0.5">{loading ? "..." : value}</h3>
+const StatCard = ({ title, value, icon, colorClass, bgColorClass, loading }) => {
+  const StatIcon = icon;
+
+  return (
+    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-3 h-24 hover:shadow-md transition-shadow">
+      <div className={`${bgColorClass} p-3 rounded-xl`}><StatIcon className={colorClass} size={20} /></div>
+      <div className="overflow-hidden">
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider truncate">{title}</p>
+        <h3 className="text-xl font-black text-gray-900 mt-0.5">{loading ? "..." : value}</h3>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Adminshome;

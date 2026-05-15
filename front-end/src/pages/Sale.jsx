@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ProductItem from "../components/ProductItem";
+import ProductItem from "../components/Productitem";
 import productStore from "../store/Productstore";
 import { HeartPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";

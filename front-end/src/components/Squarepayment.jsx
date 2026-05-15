@@ -2,7 +2,12 @@ import React, { useState } from "react";
 import { PaymentForm, CreditCard } from "react-square-web-payments-sdk";
 import URLS from "../urls";
 
-const SquarePayment = ({ amount = "1000", userEmail = "", userName = "" }) => {
+const SquarePayment = ({
+  amount = "1000",
+  userEmail = "",
+  userName = "",
+  onPaymentSuccess,
+}) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [lastPayment, setLastPayment] = useState(null);
@@ -28,6 +33,7 @@ const SquarePayment = ({ amount = "1000", userEmail = "", userName = "" }) => {
       if (data.success && data.payment) {
         setLastPayment(data.payment);
         setMessage("✅ Payment successful! Check your email for receipt.");
+        onPaymentSuccess?.(data.payment);
       } else {
         const errorDetail = data.error?.errors?.[0]?.detail || "Payment failed";
         setMessage(` ${errorDetail}`);

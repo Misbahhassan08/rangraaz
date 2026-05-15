@@ -1,10 +1,9 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import Home from "./Pages/Home.jsx";
+import Home from "./pages/Home.jsx";
 import Cart from "./pages/Cart.jsx";
 import Allproducts from "./pages/Allproducts.jsx";
 import Productdetail from "./pages/Productdetail.jsx";
@@ -23,8 +22,12 @@ import Barcodemanager from "./pages/Barcodemanager.jsx";
 import Favorites from "./pages/Favorites.jsx";
 import SizeDrawer from "./pages/SizeDrawer.jsx";
 import PrivateRoute from "./PrivateRoute.jsx";
-import QuickSearch from "./pages/QuickSearch.jsx"
-const CLIENT_ID = "897625668141-c53cp1fdekd0du1l21k22jm9qg637912.apps.googleusercontent.com"; 
+import QuickSearch from "./pages/QuickSearch.jsx";
+import PageBuilder from "./pages/PageBuilder.jsx";
+import DynamicPage from "./pages/DynamicPage.jsx";
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "897625668141-c53cp1fdekd0du1l21k22jm9qg637912.apps.googleusercontent.com";
 
 
 const router = createBrowserRouter([
@@ -41,6 +44,7 @@ const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
         { path: "/favorites", element: <Favorites /> },
         { path: "/sizedrawer", element: <SizeDrawer /> },
+        { path: "/page/:slug", element: <DynamicPage /> },
     ],
   },
   {
@@ -60,6 +64,7 @@ const router = createBrowserRouter([
       { path: "tracking", element: <Trackingpage /> },
       { path: "manage-slider", element: <ManageSlider /> },
       { path: "barcode-manager", element: <Barcodemanager /> },
+      { path: "pages", element: <PageBuilder /> },
       {path:"/dashboard/pos", element:<QuickSearch />} 
 
 
@@ -74,7 +79,7 @@ const router = createBrowserRouter([
 const root = document.getElementById("root");
 
 createRoot(root).render(
-  <GoogleOAuthProvider clientId={CLIENT_ID}>
+  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <RouterProvider router={router} />
   </GoogleOAuthProvider>
 );

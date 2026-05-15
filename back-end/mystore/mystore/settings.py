@@ -42,6 +42,10 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 SQUARE_ACCESS_TOKEN = os.getenv("SQUARE_ACCESS_TOKEN")
 SQUARE_LOCATION_ID = os.getenv("SQUARE_LOCATION_ID")
+GOOGLE_CLIENT_ID = os.getenv(
+    "GOOGLE_CLIENT_ID",
+    "897625668141-c53cp1fdekd0du1l21k22jm9qg637912.apps.googleusercontent.com",
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent

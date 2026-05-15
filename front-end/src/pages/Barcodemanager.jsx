@@ -31,7 +31,7 @@ const Barcodemanager = () => {
         setProduct(null);
         setError('Product not found');
       }
-    } catch (err) {
+    } catch {
       setError('Connection failed.');
     }
   };

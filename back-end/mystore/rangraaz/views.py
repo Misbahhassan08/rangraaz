@@ -6,8 +6,7 @@ import json
 from django.db import transaction
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
-
-GOOGLE_CLIENT_ID = "897625668141-c53cp1fdekd0du1l21k22jm9qg637912.apps.googleusercontent.com"
+from django.conf import settings
 
 
 @csrf_exempt
@@ -85,7 +84,7 @@ def google_login(request):
             if not token:
                 return JsonResponse({'status': 'error', 'message': 'Token missing'}, status=400)
 
-            idinfo = id_token.verify_oauth2_token(token, grequests.Request(), GOOGLE_CLIENT_ID)
+            idinfo = id_token.verify_oauth2_token(token, grequests.Request(), settings.GOOGLE_CLIENT_ID)
             google_id = idinfo.get('sub')
             email = idinfo.get('email')
             name = idinfo.get('name')

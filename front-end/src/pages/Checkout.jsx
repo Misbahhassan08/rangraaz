@@ -24,7 +24,18 @@ const Checkout = () => {
     country: "",
   });
 
-  const formatPrice = (price) => `$${Number(price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`; const handleChange = (event) => {
+  const formatPrice = (price) =>
+    `$${Number(price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+
+  const getCurrentUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  };
+
+  const handleChange = (event) => {
     setSelectedOption(event.target.value);
 
     setPaymentDone(false);
@@ -58,6 +69,13 @@ const Checkout = () => {
       return;
     }
 
+    const currentUser = getCurrentUser();
+    if (!currentUser?.id) {
+      alert("Please login before placing your order.");
+      navigate("/login");
+      return;
+    }
+
     const products = cart.map((item) => ({
       product_id: item.id,
       name: item.title,
@@ -66,7 +84,7 @@ const Checkout = () => {
     }));
 
     const orderPayload = {
-      user: 3,
+      user: currentUser.id,
       total_price: parseFloat(getTotalPrice().toFixed(2)),
       shipment_id: "",
       tracking_id: "",
@@ -230,8 +248,9 @@ const Checkout = () => {
                   {option === "bank" && (
                     <>
                       <Squarepayment
-                        applicationId="sandbox-sq0idb-zfj02OZgMyPq-I0GBC-a4g"
                         amount={Math.round(getTotalPrice() * 100)}
+                        userEmail={formData.email}
+                        userName={formData.name}
                         onPaymentSuccess={(info) => {
                           setPaymentInfo(info);
                           setPaymentDone(true);

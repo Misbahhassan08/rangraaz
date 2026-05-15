@@ -13,6 +13,7 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from .models import Slider
 from .models import SiteSettings
+from .models import CustomPage, PageBlock
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -21,6 +22,142 @@ load_dotenv()
 
 SQUARE_ACCESS_TOKEN = os.getenv("SQUARE_ACCESS_TOKEN")
 SQUARE_LOCATION_ID = os.getenv("SQUARE_LOCATION_ID")
+
+
+def product_to_dict(product):
+    first_image = product.images.first()
+    return {
+        'id': product.id,
+        'product_name': product.product_name,
+        'category': product.category.name if product.category else "N/A",
+        'category_id': product.category_id,
+        'sub_category': product.subcategory.name if product.subcategory else "N/A",
+        'subcategory_id': product.subcategory_id,
+        'original_price': product.original_price,
+        'sell_price': product.sell_price,
+        'discount_percentage': product.discount_percentage,
+        'is_sale_on': product.is_sale_on,
+        'quantity': product.quantity,
+        'image_url': first_image.image.url if first_image else "",
+        'images': [
+            {'id': img.id, 'image_url': img.image.url, 'order': img.order}
+            for img in product.images.all()
+        ],
+        'size_stocks': [
+            {'size': ss.size, 'quantity': ss.quantity}
+            for ss in product.size_stocks.all()
+        ],
+        'sku': product.sku,
+        'vendor': product.vendor,
+        'product_type': product.product_type,
+    }
+
+
+def serialize_page(page, include_blocks=True):
+    data = {
+        'id': page.id,
+        'title': page.title,
+        'slug': page.slug,
+        'status': page.status,
+        'meta_description': page.meta_description or '',
+        'show_in_header': page.show_in_header,
+        'nav_label': page.nav_label or page.title,
+        'nav_parent': page.nav_parent_id,
+        'nav_parent_slug': page.nav_parent.slug if page.nav_parent else '',
+        'nav_image_url': page.nav_image.url if page.nav_image else '',
+        'sort_order': page.sort_order,
+        'created_at': page.created_at,
+        'updated_at': page.updated_at,
+    }
+
+    if include_blocks:
+        blocks = []
+        for block in page.blocks.all():
+            products = []
+            if block.block_type == 'products' and block.product_ids:
+                product_qs = Products.objects.filter(id__in=block.product_ids).select_related(
+                    'category',
+                    'subcategory',
+                ).prefetch_related('images', 'size_stocks')
+                product_map = {product.id: product_to_dict(product) for product in product_qs}
+                products = [product_map[pid] for pid in block.product_ids if pid in product_map]
+
+            blocks.append({
+                'id': block.id,
+                'block_type': block.block_type,
+                'title': block.title or '',
+                'subtitle': block.subtitle or '',
+                'height': block.height,
+                'image_url': block.image.url if block.image else '',
+                'video_url': block.video.url if block.video else '',
+                'link': block.link or '',
+                'product_ids': block.product_ids or [],
+                'products': products,
+                'settings': block.settings or {},
+                'sort_order': block.sort_order,
+            })
+        data['blocks'] = blocks
+    return data
+
+
+def save_page_from_request(request, page=None):
+    title = request.POST.get('title', '').strip()
+    slug = request.POST.get('slug', '').strip()
+    if not title or not slug:
+        raise ValueError('title and slug are required')
+
+    page = page or CustomPage()
+    page.title = title
+    page.slug = slug
+    page.status = request.POST.get('status', 'draft')
+    page.meta_description = request.POST.get('meta_description', '')
+    page.show_in_header = request.POST.get('show_in_header') == 'true'
+    page.nav_label = request.POST.get('nav_label') or title
+    page.sort_order = int(request.POST.get('sort_order') or 0)
+
+    nav_parent = request.POST.get('nav_parent') or None
+    page.nav_parent_id = nav_parent
+
+    nav_image = request.FILES.get('nav_image')
+    if nav_image:
+        page.nav_image = nav_image
+
+    page.save()
+
+    existing_blocks = {block.id: block for block in page.blocks.all()}
+    blocks = json.loads(request.POST.get('blocks', '[]'))
+    page.blocks.all().delete()
+
+    for index, block_data in enumerate(blocks):
+        old_block = existing_blocks.get(block_data.get('id'))
+        block_uid = block_data.get('uid') or str(index)
+        block = PageBlock(
+            page=page,
+            block_type=block_data.get('block_type', 'products'),
+            title=block_data.get('title', ''),
+            subtitle=block_data.get('subtitle', ''),
+            height=int(block_data.get('height') or 520),
+            link=block_data.get('link', ''),
+            product_ids=block_data.get('product_ids') or [],
+            settings=block_data.get('settings') or {},
+            sort_order=index,
+        )
+
+        image_file = request.FILES.get(f'block_{block_uid}_image')
+        video_file = request.FILES.get(f'block_{block_uid}_video')
+        if image_file:
+            block.image = image_file
+        elif old_block and old_block.image:
+            block.image = old_block.image
+
+        if video_file:
+            block.video = video_file
+        elif old_block and old_block.video:
+            block.video = old_block.video
+
+        block.save()
+
+    return page
 
 
 
@@ -455,24 +592,27 @@ def manage_announcement(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 def sale_products(request):
-    # Filter products where is_sale_on is True
     products = Products.objects.filter(is_sale_on=True).select_related(
-        'category_subcategory__category', 
-        'category_subcategory__subcategory'
-    )
+        'category',
+        'subcategory',
+    ).prefetch_related('images')
 
     data = []
     for product in products:
+        first_image = product.images.first()
         product_info = {
             'id': product.id,
             'product_name': product.product_name,
-            'category': product.category_subcategory.category.name,
+            'category': product.category.name if product.category else "N/A",
+            'category_id': product.category_id,
+            'sub_category': product.subcategory.name if product.subcategory else "N/A",
+            'subcategory_id': product.subcategory_id,
             'original_price': product.original_price, 
             'sell_price': product.sell_price,
             'discount_percentage': product.discount_percentage,
             'is_sale_on': product.is_sale_on, 
             'quantity': product.quantity,
-            'image_url': product.images_url,
+            'image_url': first_image.image.url if first_image else "",
             'sku': product.sku,
             'size': product.size,
             'product_type': product.product_type,
@@ -553,3 +693,63 @@ def update_stock(request, pk):
         'id': product.id,
         'new_quantity': product.quantity
     }, status=200)
+
+
+@csrf_exempt
+def page_list_create(request):
+    if request.method == 'GET':
+        pages = CustomPage.objects.prefetch_related('blocks').all()
+        return JsonResponse({'data': [serialize_page(page, include_blocks=False) for page in pages]})
+
+    if request.method == 'POST':
+        try:
+            page = save_page_from_request(request)
+            return JsonResponse({'success': True, 'page': serialize_page(page)}, status=201)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@csrf_exempt
+def page_detail_update_delete(request, pk):
+    try:
+        page = CustomPage.objects.prefetch_related('blocks').get(pk=pk)
+    except CustomPage.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Page not found'}, status=404)
+
+    if request.method == 'GET':
+        return JsonResponse({'success': True, 'page': serialize_page(page)})
+
+    if request.method in ['POST', 'PUT']:
+        try:
+            page = save_page_from_request(request, page)
+            return JsonResponse({'success': True, 'page': serialize_page(page)})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    if request.method == 'DELETE':
+        page.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def page_by_slug(request, slug):
+    try:
+        page = CustomPage.objects.prefetch_related('blocks').get(slug=slug, status='published')
+        return JsonResponse({'success': True, 'page': serialize_page(page)})
+    except CustomPage.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Page not found'}, status=404)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def header_pages(request):
+    pages = CustomPage.objects.filter(
+        status='published',
+        show_in_header=True,
+    ).select_related('nav_parent').order_by('sort_order', 'title')
+    return JsonResponse({'data': [serialize_page(page, include_blocks=False) for page in pages]})

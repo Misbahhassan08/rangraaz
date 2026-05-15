@@ -238,7 +238,10 @@ const ProductTable = () => {
       const response = await fetch(URLS.fetchProducts);
       const result = await response.json();
       setProductsData(result.data || []);
-    } catch (error) { setProductsData([]); }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProductsData([]);
+    }
   };
 
   const fetchCategories = async () => {
@@ -246,7 +249,9 @@ const ProductTable = () => {
       const response = await fetch(URLS.fetchCategories);
       const data = await response.json();
       setFetchedCategories(data.data || data);
-    } catch (error) { }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
   };
 
   useEffect(() => { fetchProducts(); fetchCategories(); }, []);
@@ -257,7 +262,9 @@ const ProductTable = () => {
       const response = await fetch(URLS.fetchSubcategories(categoryId));
       const data = await response.json();
       setFetchedSubcategories(data.data || data);
-    } catch (error) { }
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+    }
   };
 
   const uniqueCategories = ["ALL", ...new Set(productsData.map((p) => p.category_name || p.category).filter(Boolean))];
@@ -325,7 +332,9 @@ const ProductTable = () => {
       try {
         const response = await fetch(URLS.deleteProduct(product.id), { method: 'DELETE' });
         if (response.ok) fetchProducts();
-      } catch (error) { }
+      } catch (error) {
+        console.error("Error deleting product:", error);
+      }
     }
   };
 

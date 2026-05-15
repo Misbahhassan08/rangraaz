@@ -22,6 +22,10 @@ const URLS = {
   updateOrderStatus: (id) => `${BASE_URL}/orders/${id}/update_status/`,
   getProductBySku: (sku) => `${BASE_URL}/products/product-by-sku/${sku}/`,
   updateStock: (id) => `${BASE_URL}/products/update-stock/${id}/`,
+  pages: `${BASE_URL}/products/pages/`,
+  pageDetail: (id) => `${BASE_URL}/products/pages/${id}/`,
+  pageBySlug: (slug) => `${BASE_URL}/products/pages/slug/${slug}/`,
+  headerPages: `${BASE_URL}/products/header-pages/`,
 
 
   // Others
