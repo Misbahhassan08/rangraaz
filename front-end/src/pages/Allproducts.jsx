@@ -9,8 +9,8 @@ import axios from "axios";
 const Allproducts = () => {
   const [productsData, setProductsData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [gridCols, setGridCols] = useState(4); // Default grid layout
-const [productsPerPage, setProductsPerPage] = useState(0);
+  const [gridCols, setGridCols] = useState(4); 
+  const [productsPerPage, setProductsPerPage] = useState(0);
   const [searchParams] = useSearchParams();
 
   const categoryParam = searchParams.get("category");
@@ -20,11 +20,11 @@ const [productsPerPage, setProductsPerPage] = useState(0);
 
   const favorites = productStore((state) => state.favorites);
   const toggleFavorite = productStore((state) => state.toggleFavorite);
-useEffect(() => {
-  if (productsData.length > 0) {
-    setProductsPerPage(productsData.length);
-  }
-}, [productsData]);
+  useEffect(() => {
+    if (productsData.length > 0) {
+      setProductsPerPage(productsData.length);
+    }
+  }, [productsData]);
   // 1. Fetch Products logic
   useEffect(() => {
     const fetchProducts = async () => {
@@ -43,40 +43,39 @@ useEffect(() => {
     setCurrentPage(1);
   }, [categoryParam, subCategoryParam, saleParam, searchParam, productsPerPage]);
 
-  // 2. Filter Logic - UPDATED to handle multiple filters simultaneously
   const filteredProducts = productsData.filter((product) => {
     // Start with all conditions being true
     let matchesSearch = true;
     let matchesSale = true;
     let matchesCategory = true;
     let matchesSubCategory = true;
-    
+
     // Apply search filter if present
     if (searchParam) {
       matchesSearch = product.product_name.toLowerCase().includes(searchParam.toLowerCase());
     }
-    
+
     // Apply sale filter if present
     if (saleParam === "true") {
       matchesSale = product.is_sale_on === true;
     }
-    
+
     // Apply category filter if present
     if (categoryParam) {
       matchesCategory = product.category?.toLowerCase() === categoryParam.toLowerCase();
     }
-    
+
     // Apply subcategory filter if present
     if (subCategoryParam) {
       matchesSubCategory = product.sub_category?.toLowerCase() === subCategoryParam.toLowerCase();
     }
-    
+
     // Return true only if ALL active filters match
     return matchesSearch && matchesSale && matchesCategory && matchesSubCategory;
   });
 
   // 3. Pagination Logic
-  const itemsPerPage = parseInt(productsPerPage) || 12; 
+  const itemsPerPage = parseInt(productsPerPage) || 12;
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
@@ -113,48 +112,47 @@ useEffect(() => {
       </h1>
 
       {/* TOOLBAR: Grid controls and Show Amount */}
-    <div className="flex flex-col md:flex-row items-center justify-between mb-8 border-b border-gray-100 pb-5 gap-4">
-  
-  {/* Left: Items count */}
-  <p className="text-sm text-gray-400 font-medium">
-    {filteredProducts.length} items found
-  </p>
+      <div className="flex flex-col md:flex-row items-center justify-between mb-8 border-b border-gray-100 pb-5 gap-4">
 
-  {/* Center: Grid + Show Amount */}
-  <div className="flex items-center gap-6">
-    
-    {/* Grid Toggle - better UI */}
-    <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-0.5">
-      {[2, 3, 4, 6].map((num) => (
-        <button
-          key={num}
-          onClick={() => setGridCols(num)}
-            style={{ cursor: 'pointer' }}
-          className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-200  cursor-pointer${
-            gridCols === num
-              ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-        >
-          {renderIcon(num)}
-        </button>
-      ))}
-    </div>
+        {/* Left: Items count */}
+        <p className="text-sm text-gray-400 font-medium">
+          {filteredProducts.length} items found
+        </p>
 
-    {/* Show Amount - same as before */}
-    <div className="flex flex-col items-start">
-      <span className="text-[10px] font-bold uppercase text-blue-500 mb-0.5 tracking-tighter">Show Amount</span>
-      <input
-        type="number"
-        min="1"
-        value={productsPerPage}
-        onChange={(e) => setProductsPerPage(e.target.value)}
-        className="w-20 h-9 border-2 border-blue-100 rounded-lg text-center text-sm font-bold focus:border-blue-500 outline-none transition-all"
-      />
-    </div>
+        {/* Center: Grid + Show Amount */}
+        <div className="flex items-center gap-6">
 
-  </div>
-</div>
+          {/* Grid Toggle - better UI */}
+          <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-0.5">
+            {[2, 3, 4, 6].map((num) => (
+              <button
+                key={num}
+                onClick={() => setGridCols(num)}
+                style={{ cursor: 'pointer' }}
+                className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-200  cursor-pointer${gridCols === num
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-400 hover:text-gray-600"
+                  }`}
+              >
+                {renderIcon(num)}
+              </button>
+            ))}
+          </div>
+
+          {/* Show Amount - same as before */}
+          <div className="flex flex-col items-start">
+            <span className="text-[10px] font-bold uppercase text-blue-500 mb-0.5 tracking-tighter">Show Amount</span>
+            <input
+              type="number"
+              min="1"
+              value={productsPerPage}
+              onChange={(e) => setProductsPerPage(e.target.value)}
+              className="w-20 h-9 border-2 border-blue-100 rounded-lg text-center text-sm font-bold focus:border-blue-500 outline-none transition-all"
+            />
+          </div>
+
+        </div>
+      </div>
 
       {/* PRODUCT GRID */}
       <div className={`grid ${gridClass} gap-x-4 gap-y-12 transition-all duration-500 ease-in-out`}>
@@ -169,12 +167,13 @@ useEffect(() => {
                 size={18}
               />
             </button>
-            <ProductItem 
-               {...product} 
-               title={product.product_name} 
-               originalPrice={product.original_price} 
-               sellPrice={product.sell_price} 
-                 isSaleOn={product.is_sale_on}
+            <ProductItem
+              {...product}
+              title={product.product_name}
+              originalPrice={product.original_price}
+              sellPrice={product.sell_price}
+              isSaleOn={product.is_sale_on}
+              size_stocks={product.size_stocks}
             />
           </div>
         ))}
@@ -184,31 +183,30 @@ useEffect(() => {
       {totalPages > 1 && (
         <div className="mt-20 flex flex-col items-center gap-4 border-t border-gray-100 pt-10">
           <div className="flex items-center gap-2">
-            <button 
+            <button
               disabled={currentPage === 1}
               onClick={() => handlePageChange(currentPage - 1)}
               className="flex items-center gap-1 p-2 text-gray-400 hover:text-black disabled:opacity-20 transition-all"
             >
               <ChevronLeft size={18} /> <span className="text-sm font-medium">Prev</span>
             </button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}
                   onClick={() => handlePageChange(page)}
-                  className={`w-10 h-10 rounded-md text-sm font-bold transition-all ${
-                    currentPage === page 
-                    ? 'bg-slate-800 text-white shadow-md' 
-                    : 'text-gray-400 hover:bg-gray-100 hover:text-black'
-                  }`}
+                  className={`w-10 h-10 rounded-md text-sm font-bold transition-all ${currentPage === page
+                      ? 'bg-slate-800 text-white shadow-md'
+                      : 'text-gray-400 hover:bg-gray-100 hover:text-black'
+                    }`}
                 >
                   {page}
                 </button>
               ))}
             </div>
 
-            <button 
+            <button
               disabled={currentPage === totalPages}
               onClick={() => handlePageChange(currentPage + 1)}
               className="flex items-center gap-1 p-2 text-gray-400 hover:text-black disabled:opacity-20 transition-all"
@@ -216,7 +214,7 @@ useEffect(() => {
               <span className="text-sm font-medium">Next</span> <ChevronRight size={18} />
             </button>
           </div>
-          
+
           <p className="text-xs text-gray-400 italic">
             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
           </p>

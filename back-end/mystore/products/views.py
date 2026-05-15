@@ -2,7 +2,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from .models import Products, CategorySubCategory ,Category,SubCategory
+from .models import Products, CategorySubCategory, Category, SubCategory, ProductImage,SizeStock
 import os
 import uuid
 import requests
@@ -21,8 +21,6 @@ load_dotenv()
 
 SQUARE_ACCESS_TOKEN = os.getenv("SQUARE_ACCESS_TOKEN")
 SQUARE_LOCATION_ID = os.getenv("SQUARE_LOCATION_ID")
-
-
 
 
 
@@ -110,13 +108,11 @@ def create_payment(request):
 
 
 
-
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_product(request):
     try:
         sku = request.POST.get('sku', '').strip()
-
         if len(sku) < 5:
             return JsonResponse({'error': 'SKU must be at least 5 characters long.'}, status=400)
 
@@ -125,59 +121,83 @@ def create_product(request):
             original_price=float(request.POST.get('original_price')),
             category_id=request.POST.get('category_id'),
             subcategory_id=request.POST.get('subcategory_id'),
-            quantity=int(request.POST.get('quantity')),
+            quantity=0,  # ab SizeStock se calculate hoga
             sku=sku,
-            size=request.POST.get('size'),
             vendor=request.POST.get('vendor'),
-            image=request.FILES.get('image'),
             is_sale_on=request.POST.get('is_sale_on') == "true",
             discount_percentage=int(request.POST.get('discount_percentage') or 0),
             product_type=request.POST.get('product_type')
         )
 
+        # Images
+        for index, img in enumerate(request.FILES.getlist('images')):
+            ProductImage.objects.create(product=product, image=img, order=index)
+
+        # Size stocks
+        size_stocks = json.loads(request.POST.get('size_stocks', '[]'))
+        total_qty = 0
+        for item in size_stocks:
+            if item.get('size') and item.get('quantity') is not None:
+                qty = int(item['quantity'])
+                SizeStock.objects.create(product=product, size=item['size'], quantity=qty)
+                total_qty += qty
+
+        # Total quantity update
+        product.quantity = total_qty
+        product.save()
+
         return JsonResponse({'message': 'Product created successfully'}, status=201)
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({'error': str(e)}, status=400)   
+    
     
 @csrf_exempt
 @require_http_methods(["GET"])
 def all_data(request):
     try:
-        products = Products.objects.select_related('category', 'subcategory').all()
+        products = Products.objects.select_related('category', 'subcategory').prefetch_related('images', 'size_stocks').all()
 
         data = []
         for product in products:
-            try:
-                img_url = product.image.url if product.image else ""
-            except Exception:
-                img_url = ""
+            first_image = product.images.first()
+            img_url = first_image.image.url if first_image else ""
+
+            all_images = [
+                {'id': img.id, 'image_url': img.image.url, 'order': img.order}
+                for img in product.images.all()
+            ]
+
+            size_stocks = [
+                {'size': ss.size, 'quantity': ss.quantity}
+                for ss in product.size_stocks.all()
+            ]
 
             product_info = {
                 'id': product.id,
                 'product_name': product.product_name,
                 'category': product.category.name if product.category else "N/A",
+                'category_id': product.category_id,
                 'sub_category': product.subcategory.name if product.subcategory else "N/A",
-                'original_price': product.original_price, 
+                'subcategory_id': product.subcategory_id,
+                'original_price': product.original_price,
                 'sell_price': product.sell_price,
                 'discount_percentage': product.discount_percentage,
-                'is_sale_on': product.is_sale_on, 
+                'is_sale_on': product.is_sale_on,
                 'quantity': product.quantity,
-                'image_url': img_url, 
+                'image_url': img_url,
+                'images': all_images,
+                'size_stocks': size_stocks,  # ← naya
                 'sku': product.sku,
-                'size': product.size, 
                 'vendor': product.vendor,
                 'product_type': product.product_type,
             }
             data.append(product_info)
-        
+
         return JsonResponse({'data': data}, safe=False)
 
     except Exception as e:
-        print(f"Error in all_data: {str(e)}")
-        return JsonResponse({'data': [], 'error': str(e)}, status=500)
-    
-    
+        return JsonResponse({'data': [], 'error': str(e)}, status=500)  
     
 # DELETE PRODUCT
 @csrf_exempt
@@ -194,48 +214,45 @@ def item_delete(request, pk):
 
 # UPDATE PRODUCT
 @csrf_exempt
-@require_http_methods(["PUT"])
+@require_http_methods(["POST", "PUT"])
 def item_update(request, pk):
     try:
         item = Products.objects.get(pk=pk)
     except Products.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
 
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    if 'product_name' in request.POST: item.product_name = request.POST['product_name']
+    if 'product_type' in request.POST: item.product_type = request.POST['product_type']
+    if 'vendor' in request.POST: item.vendor = request.POST['vendor']
+    if 'sku' in request.POST: item.sku = request.POST['sku']
+    if 'original_price' in request.POST: item.original_price = float(request.POST['original_price'])
+    if 'discount_percentage' in request.POST: item.discount_percentage = int(request.POST['discount_percentage'])
+    if 'is_sale_on' in request.POST: item.is_sale_on = request.POST['is_sale_on'] == 'true'
+    if 'category_id' in request.POST: item.category_id = request.POST['category_id']
+    if 'subcategory_id' in request.POST: item.subcategory_id = request.POST['subcategory_id']
 
-    # Basic Fields
-    if 'product_name' in data: item.product_name = data['product_name']
-    if 'brand' in data: item.brand = data['brand']  
-    if 'product_type' in data: item.product_type = data['product_type']
-    if 'quantity' in data: item.quantity = int(data['quantity'])
-    if 'vendor' in data: item.vendor = data['vendor']
-    if 'image_url' in data: item.image_url = data['image_url']
-    if 'sku' in data: item.sku = data['sku']
-    if 'size' in data: item.size = data['size']
-
-    if 'original_price' in data:
-        item.original_price = float(data['original_price'])
-    if 'discount_percentage' in data:
-        item.discount_percentage = int(data['discount_percentage'])
-    if 'is_sale_on' in data:
-        item.is_sale_on = data['is_sale_on']
-    # --------------------------------------------------
-
-    if 'category_subcategory' in data:
-        try:
-            category = CategorySubCategory.objects.get(pk=data['category_subcategory'])
-            item.category_subcategory = category
-        except CategorySubCategory.DoesNotExist:
-            return JsonResponse({'error': 'Invalid category_subcategory ID'}, status=400)
+    # Size stocks update
+    size_stocks_raw = request.POST.get('size_stocks', '')
+    if size_stocks_raw:
+        size_stocks = json.loads(size_stocks_raw)
+        item.size_stocks.all().delete()
+        total_qty = 0
+        for s in size_stocks:
+            if s.get('size') and s.get('quantity') is not None:
+                qty = int(s['quantity'])
+                SizeStock.objects.create(product=item, size=s['size'], quantity=qty)
+                total_qty += qty
+        item.quantity = total_qty
 
     item.save()
-    return JsonResponse({'message': 'Product updated successfully', 'sell_price': item.sell_price})
+
+    # Nai images
+    for index, img in enumerate(request.FILES.getlist('images')):
+        ProductImage.objects.create(product=item, image=img, order=item.images.count() + index)
+
+    return JsonResponse({'message': 'Product updated successfully', 'sell_price': str(item.sell_price)})
 
 
-# apis for categories
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -455,7 +472,7 @@ def sale_products(request):
             'discount_percentage': product.discount_percentage,
             'is_sale_on': product.is_sale_on, 
             'quantity': product.quantity,
-            'image_url': product.image_url,
+            'image_url': product.images_url,
             'sku': product.sku,
             'size': product.size,
             'product_type': product.product_type,
@@ -490,9 +507,9 @@ def total_products_count(request):
 @require_http_methods(["GET"])
 def get_product_by_sku(request, sku):
     try:
-        product = Products.objects.get(sku=sku)
-        img_url = product.image.url if product.image else ""
-        
+        product = Products.objects.prefetch_related('images').get(sku=sku)
+        first_image = product.images.first()
+        img_url = first_image.image.url if first_image else ""
         data = {
             'id': product.id,
             'product_name': product.product_name,

@@ -11,11 +11,16 @@ const SizeDrawer = ({ product, onClose }) => {
 
   if (!product) return null;
 
-  const sizes = product.size ? product.size.split(",").map(s => s.trim()) : [];
-  const finalPrice = product.isSaleOn ? product.sellPrice : product.originalPrice;
+  const sizes = (product.size_stocks && product.size_stocks.length > 0)
+    ? product.size_stocks
+    : product.size ? product.size.split(",").map(s => s.trim()).map(s => ({ size: s, quantity: 999 })) : []; const finalPrice = product.isSaleOn ? product.sellPrice : product.originalPrice;
 
   const handleAddToCart = () => {
     if (!selectedSize && sizes.length > 0) return;
+
+    const stockItem = sizes.find(s => s.size === selectedSize);
+    if (stockItem && stockItem.quantity === 0) return;
+
     addToCart({
       id: product.id,
       title: product.title,
@@ -26,7 +31,6 @@ const SizeDrawer = ({ product, onClose }) => {
       quantity: 1,
     });
     onClose();
-
   };
 
   return (
@@ -63,15 +67,15 @@ const SizeDrawer = ({ product, onClose }) => {
               {product.isSaleOn ? (
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-bold text-red-600">
-                    PKR. {Number(product.sellPrice).toLocaleString()}
+                    $ {Number(product.sellPrice).toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-400 line-through">
-                    PKR. {Number(product.originalPrice).toLocaleString()}
+                    $ {Number(product.originalPrice).toLocaleString()}
                   </p>
                 </div>
               ) : (
                 <p className="text-sm font-bold text-gray-800">
-                  PKR. {Number(product.originalPrice).toLocaleString()}
+                  $ {Number(product.originalPrice).toLocaleString()}
                 </p>
               )}
             </div>
@@ -84,17 +88,20 @@ const SizeDrawer = ({ product, onClose }) => {
             Size: <span className="text-black">{selectedSize || "—"}</span>
           </p>
           {sizes.length > 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {sizes.map((s) => (
+            <div className="flex flex-wrap gap-3 ">
+              {sizes.map((item) => (
                 <button
-                  key={s}
-                  onClick={() => setSelectedSize(s)}
-                  className={`w-12 h-12 rounded-lg border-2 text-sm font-bold transition-all ${selectedSize === s
-                      ? "border-black bg-black text-white"
-                      : "border-gray-200 text-gray-700 hover:border-gray-400"
+                  key={item.size}
+                  onClick={() => item.quantity > 0 && setSelectedSize(item.size)}
+                  disabled={item.quantity === 0}
+                  className={`w-12 h-12 rounded-lg border-2 text-sm font-bold transition-all cursor-pointer ${item.quantity === 0
+                      ? "border-gray-100 text-gray-300 line-through cursor-not-allowed"
+                      : selectedSize === item.size
+                        ? "border-black bg-black text-white"
+                        : "border-gray-200 text-gray-700 hover:border-gray-400"
                     }`}
                 >
-                  {s}
+                  {item.size}
                 </button>
               ))}
             </div>
@@ -108,7 +115,7 @@ const SizeDrawer = ({ product, onClose }) => {
           <button
             onClick={handleAddToCart}
             disabled={sizes.length > 0 && !selectedSize}
-            className="w-full bg-black text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-black text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <ShoppingBag size={16} />
             Add to Cart

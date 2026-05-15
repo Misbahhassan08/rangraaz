@@ -5,7 +5,6 @@ from django.core.validators import MinLengthValidator
 class Products(models.Model):
     product_name = models.CharField(max_length=255)
     product_type = models.CharField(max_length=100)
-    image = CloudinaryField('image', null=True, blank=True)
     
     # --- Sale Fields ---
     original_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price in USD")
@@ -50,7 +49,24 @@ class Products(models.Model):
         
         
         
-           
+  
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(
+        Products, 
+        on_delete=models.CASCADE, 
+        related_name='images'
+    )
+    image = CloudinaryField('image')
+    label = models.CharField(max_length=50, blank=True, null=True)  # front, back etc
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.product.product_name} - image {self.order}"
+             
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -106,6 +122,22 @@ class SiteSettings(models.Model):
 
     def __str__(self):
         return self.announcement_text
+    
+    
+class SizeStock(models.Model):
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name='size_stocks'
+    )
+    size = models.CharField(max_length=50)
+    quantity = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('product', 'size')
+
+    def __str__(self):
+        return f"{self.product.product_name} - {self.size}: {self.quantity}"
     
     
     

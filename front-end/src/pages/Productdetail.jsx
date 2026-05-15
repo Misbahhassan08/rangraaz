@@ -1,7 +1,5 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import InnerImageZoom from "react-inner-image-zoom";
-import "react-inner-image-zoom/lib/styles.min.css";
 import productStore from "../store/Productstore";
 import { HeartPlus, Handbag } from "lucide-react";
 
@@ -12,83 +10,105 @@ const Productdetail = () => {
   const addToCart = productStore((state) => state.addToCart);
 
   const [addedMessage, setAddedMessage] = React.useState("");
-
   const favorites = productStore((state) => state.favorites);
   const toggleFavorite = productStore((state) => state.toggleFavorite);
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { id, price, title, product_type, image_url, size } = location.state || {};
+const { id, price, title, product_type, image_url, size, images, size_stocks } = location.state || {};
 
+  const allImages = images && images.length > 0 ? images : (image_url ? [{ image_url }] : []);
+  const [selectedImage, setSelectedImage] = React.useState(allImages[0]?.image_url || image_url);
   const [selectedSize, setSelectedSize] = React.useState(null);
 
-  const availableSizes = size ? size.split(",").map(s => s.trim()) : [];
-  const formatPrice = (price) => Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const handleAddToCart = () => {
-    if (!selectedSize && availableSizes.length > 0) {
-      setAddedMessage("Please select a size.");
-      setTimeout(() => setAddedMessage(""), 2000);
-      return;
-    }
-    const productToAdd = {
-      id,
-      title,
-      price,
-      image_url,
-      product_type,
-      size: selectedSize,
-      quantity,
-    };
+const availableSizes = (size_stocks && size_stocks.length > 0)
+  ? size_stocks.map(ss => ss.size)
+  : size ? size.split(",").map(s => s.trim()) : [];  const formatPrice = (p) => Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const handleAddToCart = () => {
+  if (!selectedSize && (size_stocks || []).length > 0) {
+    setAddedMessage("Please select a size.");
+    setTimeout(() => setAddedMessage(""), 2000);
+    return;
+  }
 
-    addToCart(productToAdd);
-    setAddedMessage("Added to cart!");
+  const stockItem = (size_stocks || []).find(ss => ss.size === selectedSize);
+  const availableQty = stockItem ? stockItem.quantity : 0;
 
-    setTimeout(() => {
-      setAddedMessage("");
-      navigate("/cart");
-    }, 500);
-  };
+  if (quantity > availableQty) {
+    setAddedMessage(`Only ${availableQty} item(s) available in size ${selectedSize}.`);
+    setTimeout(() => setAddedMessage(""), 3000);
+    return;
+  }
+
+  if (availableQty === 0) {
+    setAddedMessage(`Size ${selectedSize} is out of stock.`);
+    setTimeout(() => setAddedMessage(""), 3000);
+    return;
+  }
+
+  addToCart({ id, title, price, image_url, product_type, size: selectedSize, quantity });
+  setAddedMessage("Added to cart!");
+  setTimeout(() => { setAddedMessage(""); navigate("/cart"); }, 500);
+};
 
   const isFavorited = favorites.some((item) => item.id === id);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 p-4 sm:p-6 max-w-7xl mx-auto font-sans min-h-screen">
-      {/* Image Section */}
-      <div className="flex-1 flex justify-center items-start lg:sticky lg:top-6">
-        <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">
-          <InnerImageZoom
-            src={image_url}
-            zoomSrc={image_url}
-            zoomType="hover"
-            zoomPreload={true}
-            zoomScale={2}
-            alt={title}
-            className="w-full h-auto rounded-lg shadow-xl"
+
+      {/* ✅ Image Section */}
+ 
+<div className="flex-1 lg:sticky lg:top-6 flex flex-row gap-3 h-fit">
+
+  {/* Left — Vertical Thumbnails */}
+  {allImages.length > 1 && (
+    <div className="flex flex-col gap-2">
+      {allImages.map((img, i) => (
+        <button
+          key={i}
+          onClick={() => setSelectedImage(img.image_url)}
+          className={`flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+            selectedImage === img.image_url
+              ? "border-purple-600 shadow-md"
+              : "border-gray-100 hover:border-purple-300"
+          }`}
+        >
+          <img
+            src={img.image_url}
+            alt={`view-${i}`}
+            className="w-16 h-16 object-cover"
           />
-        </div>
-      </div>
+        </button>
+      ))}
+    </div>
+  )}
+
+  {/* Right — Main Image */}
+  <div className="flex-1 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100"
+       style={{ aspectRatio: '3/4' }}>
+    <img
+      src={selectedImage}
+      alt={title}
+      className="w-full h-full object-cover"
+    />
+  </div>
+
+</div>
 
       {/* Details Section */}
       <div className="flex-1 space-y-5 sm:space-y-6">
-        {/* Header with Title and Favorite */}
+
+        {/* Title + Favorite */}
         <div className="flex justify-between items-start gap-4">
           <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 tracking-wide leading-tight">
             {title}
           </h1>
           <HeartPlus
-            onClick={() =>
-              toggleFavorite({
-                id,
-                title,
-                price,
-                image_url,
-                product_type,
-                size,
-              })
-            }
-            className={`cursor-pointer w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 transition-colors duration-200 ${isFavorited ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-gray-600"
-              }`}
+            onClick={() => toggleFavorite({ id, title, price, image_url, product_type, size })}
+            className={`cursor-pointer w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 transition-colors duration-200 ${
+              isFavorited ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-gray-600"
+            }`}
             strokeWidth={1.5}
           />
         </div>
@@ -103,24 +123,20 @@ const Productdetail = () => {
           {product_type}
         </p>
 
-        {/* Size Selection Section */}
+        {/* Size Selection */}
         {availableSizes.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-700">Select Size:</h4>
-            <div className="flex flex-wrap gap-2 sm:gap-3 ">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {availableSizes.map((s) => (
                 <button
                   key={s}
                   onClick={() => setSelectedSize(s)}
-                  className={`
-                    w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center 
-                    text-sm sm:text-base font-medium border border-gray-300 rounded-xl
-                    hover:border-black transition-all duration-200 cursor-pointer
-                    ${selectedSize === s
+                  className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-sm sm:text-base font-medium border border-gray-300 rounded-xl hover:border-black transition-all duration-200 cursor-pointer ${
+                    selectedSize === s
                       ? "bg-black text-white border-black shadow-md"
                       : "bg-white text-gray-700 hover:bg-gray-50"
-                    }
-                  `}
+                  }`}
                 >
                   {s}
                 </button>
@@ -129,14 +145,13 @@ const Productdetail = () => {
           </div>
         )}
 
-        {/* Quantity Selector */}
+        {/* Quantity */}
         <div className="flex items-center space-x-4">
           <label className="text-gray-700 text-sm sm:text-base">Quantity:</label>
           <div className="flex items-center border border-gray-300 rounded-full overflow-hidden">
             <button
               onClick={decreaseQuantity}
               className="px-3 sm:px-4 py-2 text-lg sm:text-xl font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-              aria-label="Decrease quantity"
             >
               −
             </button>
@@ -146,31 +161,30 @@ const Productdetail = () => {
             <button
               onClick={increaseQuantity}
               className="px-3 sm:px-4 py-2 text-lg sm:text-xl font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-              aria-label="Increase quantity"
             >
               +
             </button>
           </div>
         </div>
 
-        {/* Add to Cart Button */}
+        {/* Add to Cart */}
         <button
           onClick={handleAddToCart}
-          className="w-full sm:w-auto min-w-[200px] bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-500/20py-3 sm:py-4 rounded-xl hover:bg-purple-700 transition duration-200 text-sm sm:text-base font-bold flex items-center justify-center gap-2 mb-3 cursor-pointer"
+          className="w-full sm:w-auto min-w-[200px] bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg py-3 sm:py-4 px-6 rounded-xl hover:opacity-90 transition duration-200 text-sm sm:text-base font-bold flex items-center justify-center gap-2 cursor-pointer"
         >
           <Handbag className="w-5 h-5 sm:w-6 sm:h-6" />
           Add to Cart
         </button>
 
-        {/* Message Notification */}
+        {/* Message */}
         {addedMessage && (
-          <div className={`text-center text-sm sm:text-base font-medium mt-4 p-3 rounded-lg ${addedMessage.includes("Please")
-              ? "text-red-600 bg-red-50"
-              : "text-green-600 bg-green-50"
-            }`}>
+          <div className={`text-center text-sm sm:text-base font-medium mt-4 p-3 rounded-lg ${
+            addedMessage.includes("Please") ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
+          }`}>
             {addedMessage}
           </div>
         )}
+
       </div>
     </div>
   );
