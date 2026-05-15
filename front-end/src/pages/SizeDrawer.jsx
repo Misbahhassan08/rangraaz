@@ -109,6 +109,7 @@ const SizeDrawer = ({ product, onClose }) => {
             <p className="text-sm text-gray-400">No sizes available</p>
           )}
         </div>
+       
 
         {/* Add to Cart Button */}
         <div className="px-6 py-5 ">
