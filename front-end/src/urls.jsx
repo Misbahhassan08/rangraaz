@@ -1,5 +1,6 @@
-const BASE_URL = "http://127.0.0.1:8000";
-
+const BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
+).replace(/\/+$/, "");
 const URLS = {
   // Products
   fetchProducts: `${BASE_URL}/products/products/`,
@@ -13,6 +14,12 @@ const URLS = {
 
   // Categories & Subcategories
   fetchCategories: `${BASE_URL}/products/categories/all/`,
+  createCategory: `${BASE_URL}/products/categories/create/`,
+  createSubcategory: `${BASE_URL}/products/subcategories/create/`,
+  linkCategorySubcategory: `${BASE_URL}/products/link-category-subcategory/`,
+  deleteCategory: (id) => `${BASE_URL}/products/categories/${id}/delete/`,
+  deleteSubcategory: (id) => `${BASE_URL}/products/subcategories/${id}/delete/`,
+  fetchAllSubcategories: `${BASE_URL}/products/subcategories/all/`,
   fetchSubcategories: (catId) => `${BASE_URL}/products/subcategories/${catId}/`,
 
   // Orders & Dashboard
@@ -26,6 +33,9 @@ const URLS = {
   pageDetail: (id) => `${BASE_URL}/products/pages/${id}/`,
   pageBySlug: (slug) => `${BASE_URL}/products/pages/slug/${slug}/`,
   headerPages: `${BASE_URL}/products/header-pages/`,
+  headerGroups: `${BASE_URL}/products/header-groups/`,
+  headerGroupDetail: (id) => `${BASE_URL}/products/header-groups/${id}/`,
+  headerNav: `${BASE_URL}/products/header-nav/`,
 
 
   // Others

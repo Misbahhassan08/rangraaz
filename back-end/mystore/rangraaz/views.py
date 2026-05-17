@@ -166,7 +166,10 @@ def update_role(request, pk):
 @csrf_exempt
 def get_roles(request):
     if request.method == "GET":
-        roles = list(Role.objects.all().values("id", "role"))
+        roles = [
+            {"id": role, "role": label}
+            for role, label in Customer.ROLE_CHOICES
+        ]
         return JsonResponse(roles, safe=False)
 
 

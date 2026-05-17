@@ -16,20 +16,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-# settings.py
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv()
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'ainee6983@gmail.com' 
-EMAIL_HOST_PASSWORD = 'subh wjnh ojxz fomr' 
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-
-load_dotenv()  
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 
 # Cloudinary Configuration
 CLOUDINARY_STORAGE = {
@@ -47,23 +43,12 @@ GOOGLE_CLIENT_ID = os.getenv(
     "897625668141-c53cp1fdekd0du1l21k22jm9qg637912.apps.googleusercontent.com",
 )
 
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-+3f!+xw^1bo+2#ri5km_czb=%*n^wthl=6ayf!!$ac!==xo*&3"
+SECRET_KEY = "django-insecure-p_dcw4*iw4)5)@02don91rrh-iad4j@3(l&918ewdpz4pu!*kb"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = False
 ALLOWED_HOSTS = ["*"]
-
-
-# Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -85,14 +70,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-      'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = "mystore.urls"
@@ -116,16 +100,17 @@ TEMPLATES = [
 WSGI_APPLICATION = "mystore.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-         'OPTIONS': {
-            'timeout': 20,  
-        }
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME', 'rangraa1_pres562'),
+        'USER': os.getenv('DB_USER', 'rangraa1'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'tc!5D1:FP5D5yf'),
+        'HOST': os.getenv('DB_HOST', '74.50.90.186'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
@@ -165,6 +150,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -172,11 +158,4 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-CORS_ALLOW_ALL_ORIGINS = True  
-SECURE_CROSS_ORIGIN_OPENER_POLICY = None
-# settings.py
-SHIPPO_API_KEY = "shippo_test_b8740709eb2a63b7c6a1fb5fb29d93c084e72697"
-
-
-# settings.py mein ye lines add karein
-SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+CORS_ALLOW_ALL_ORIGINS = True

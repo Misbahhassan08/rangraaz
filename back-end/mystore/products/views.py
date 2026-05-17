@@ -13,7 +13,8 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from .models import Slider
 from .models import SiteSettings
-from .models import CustomPage, PageBlock
+from .models import CustomPage, HeaderGroup, PageBlock
+from .page_services import PageBuilderService
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -253,11 +254,16 @@ def create_product(request):
         if len(sku) < 5:
             return JsonResponse({'error': 'SKU must be at least 5 characters long.'}, status=400)
 
+        category_id = request.POST.get('category_id') or None
+        subcategory_id = request.POST.get('subcategory_id') or None
+        if not category_id:
+            return JsonResponse({'error': 'Category is required.'}, status=400)
+
         product = Products.objects.create(
             product_name=request.POST.get('product_name'),
             original_price=float(request.POST.get('original_price')),
-            category_id=request.POST.get('category_id'),
-            subcategory_id=request.POST.get('subcategory_id'),
+            category_id=category_id,
+            subcategory_id=subcategory_id,
             quantity=0,  # ab SizeStock se calculate hoga
             sku=sku,
             vendor=request.POST.get('vendor'),
@@ -365,8 +371,12 @@ def item_update(request, pk):
     if 'original_price' in request.POST: item.original_price = float(request.POST['original_price'])
     if 'discount_percentage' in request.POST: item.discount_percentage = int(request.POST['discount_percentage'])
     if 'is_sale_on' in request.POST: item.is_sale_on = request.POST['is_sale_on'] == 'true'
-    if 'category_id' in request.POST: item.category_id = request.POST['category_id']
-    if 'subcategory_id' in request.POST: item.subcategory_id = request.POST['subcategory_id']
+    if 'category_id' in request.POST:
+        category_id = request.POST.get('category_id') or None
+        if not category_id:
+            return JsonResponse({'error': 'Category is required.'}, status=400)
+        item.category_id = category_id
+    if 'subcategory_id' in request.POST: item.subcategory_id = request.POST.get('subcategory_id') or None
 
     # Size stocks update
     size_stocks_raw = request.POST.get('size_stocks', '')
@@ -399,20 +409,27 @@ def create_category(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    name = data.get('name')
-    description = data.get('description', '')
+    name = (data.get('name') or '').strip()
+    description = (data.get('description') or '').strip()
 
-    # Check if the category already exists
-    if Category.objects.filter(name=name).exists():
-        return JsonResponse({'error': 'Category with this name already exists'}, status=400)
+    if not name:
+        return JsonResponse({'error': 'Category name is required'}, status=400)
 
-    category = Category.objects.create(name=name, description=description)
+    category, created = Category.objects.get_or_create(
+        name__iexact=name,
+        defaults={'name': name, 'description': description},
+    )
+
+    if not created and description and not category.description:
+        category.description = description
+        category.save(update_fields=['description'])
 
     return JsonResponse({
         'id': category.id,
         'name': category.name,
-        'description': category.description
-    }, status=201)
+        'description': category.description,
+        'message': 'Category created successfully' if created else 'Category already exists',
+    }, status=201 if created else 200)
 
 
 
@@ -426,26 +443,27 @@ def create_subcategory(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    name = data.get('name')
-    description = data.get('description', '')
+    name = (data.get('name') or '').strip()
+    description = (data.get('description') or '').strip()
 
     if not name:
         return JsonResponse({'error': 'SubCategory name is required'}, status=400)
 
-    if SubCategory.objects.filter(name=name).exists():
-        return JsonResponse({'error': 'SubCategory with this name already exists'}, status=400)
-
-    subcategory = SubCategory.objects.create(
-        name=name,
-        description=description
+    subcategory, created = SubCategory.objects.get_or_create(
+        name__iexact=name,
+        defaults={'name': name, 'description': description},
     )
+
+    if not created and description and not subcategory.description:
+        subcategory.description = description
+        subcategory.save(update_fields=['description'])
 
     return JsonResponse({
         'id': subcategory.id,
         'name': subcategory.name,
         'description': subcategory.description,
-        'message': 'SubCategory created successfully without link'
-    }, status=201)
+        'message': 'SubCategory created successfully' if created else 'SubCategory already exists'
+    }, status=201 if created else 200)
 
 
 @csrf_exempt
@@ -481,8 +499,84 @@ def link_category_subcategory(request):
 #show all user
 @csrf_exempt
 def all_categories(request):
-    category = Category.objects.all().values()
+    category = Category.objects.all().order_by('name').values()
     return JsonResponse({'data': list(category)})
+
+
+@csrf_exempt
+def all_subcategories(request):
+    subcategories = SubCategory.objects.all().order_by('name').values('id', 'name', 'description')
+    return JsonResponse({'data': list(subcategories)})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_category(request, pk):
+    try:
+        category = Category.objects.get(pk=pk)
+    except Category.DoesNotExist:
+        return JsonResponse({'error': 'Category not found'}, status=404)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        data = {}
+
+    replacement_id = data.get('replacement_category_id')
+    product_count = Products.objects.filter(category=category).count()
+
+    if product_count:
+        if not replacement_id:
+            return JsonResponse({'error': 'Replacement category is required before deleting a category with products.', 'product_count': product_count}, status=400)
+        try:
+            replacement_id = int(replacement_id)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'Replacement category ID must be a number.'}, status=400)
+        if replacement_id == category.id:
+            return JsonResponse({'error': 'Replacement category must be different.'}, status=400)
+        try:
+            replacement = Category.objects.get(pk=replacement_id)
+        except Category.DoesNotExist:
+            return JsonResponse({'error': 'Replacement category not found'}, status=404)
+        Products.objects.filter(category=category).update(category=replacement)
+
+    category.delete()
+    return JsonResponse({'message': 'Category deleted successfully', 'reassigned_products': product_count})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_subcategory(request, pk):
+    try:
+        subcategory = SubCategory.objects.get(pk=pk)
+    except SubCategory.DoesNotExist:
+        return JsonResponse({'error': 'SubCategory not found'}, status=404)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        data = {}
+
+    replacement_id = data.get('replacement_subcategory_id')
+    product_count = Products.objects.filter(subcategory=subcategory).count()
+
+    if product_count:
+        if not replacement_id:
+            return JsonResponse({'error': 'Replacement subcategory is required before deleting a subcategory with products.', 'product_count': product_count}, status=400)
+        try:
+            replacement_id = int(replacement_id)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'Replacement subcategory ID must be a number.'}, status=400)
+        if replacement_id == subcategory.id:
+            return JsonResponse({'error': 'Replacement subcategory must be different.'}, status=400)
+        try:
+            replacement = SubCategory.objects.get(pk=replacement_id)
+        except SubCategory.DoesNotExist:
+            return JsonResponse({'error': 'Replacement subcategory not found'}, status=404)
+        Products.objects.filter(subcategory=subcategory).update(subcategory=replacement)
+
+    subcategory.delete()
+    return JsonResponse({'message': 'SubCategory deleted successfully', 'reassigned_products': product_count})
 
 
 
@@ -699,12 +793,12 @@ def update_stock(request, pk):
 def page_list_create(request):
     if request.method == 'GET':
         pages = CustomPage.objects.prefetch_related('blocks').all()
-        return JsonResponse({'data': [serialize_page(page, include_blocks=False) for page in pages]})
+        return JsonResponse({'data': [PageBuilderService.serialize_page(page, include_blocks=False) for page in pages]})
 
     if request.method == 'POST':
         try:
-            page = save_page_from_request(request)
-            return JsonResponse({'success': True, 'page': serialize_page(page)}, status=201)
+            page = PageBuilderService.save_page(request)
+            return JsonResponse({'success': True, 'page': PageBuilderService.serialize_page(page)}, status=201)
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -719,12 +813,12 @@ def page_detail_update_delete(request, pk):
         return JsonResponse({'success': False, 'error': 'Page not found'}, status=404)
 
     if request.method == 'GET':
-        return JsonResponse({'success': True, 'page': serialize_page(page)})
+        return JsonResponse({'success': True, 'page': PageBuilderService.serialize_page(page)})
 
     if request.method in ['POST', 'PUT']:
         try:
-            page = save_page_from_request(request, page)
-            return JsonResponse({'success': True, 'page': serialize_page(page)})
+            page = PageBuilderService.save_page(request, page)
+            return JsonResponse({'success': True, 'page': PageBuilderService.serialize_page(page)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -740,7 +834,7 @@ def page_detail_update_delete(request, pk):
 def page_by_slug(request, slug):
     try:
         page = CustomPage.objects.prefetch_related('blocks').get(slug=slug, status='published')
-        return JsonResponse({'success': True, 'page': serialize_page(page)})
+        return JsonResponse({'success': True, 'page': PageBuilderService.serialize_page(page)})
     except CustomPage.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Page not found'}, status=404)
 
@@ -752,4 +846,56 @@ def header_pages(request):
         status='published',
         show_in_header=True,
     ).select_related('nav_parent').order_by('sort_order', 'title')
-    return JsonResponse({'data': [serialize_page(page, include_blocks=False) for page in pages]})
+    return JsonResponse({'data': [PageBuilderService.serialize_page(page, include_blocks=False) for page in pages]})
+
+
+@csrf_exempt
+def header_group_list_create(request):
+    if request.method == 'GET':
+        if not HeaderGroup.objects.exists():
+            PageBuilderService.seed_default_header_groups()
+        groups = HeaderGroup.objects.prefetch_related('pages').all()
+        return JsonResponse({'data': [PageBuilderService.serialize_header_group(group) for group in groups]})
+
+    if request.method == 'POST':
+        try:
+            group = PageBuilderService.save_header_group(request)
+            return JsonResponse({'success': True, 'group': PageBuilderService.serialize_header_group(group)}, status=201)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@csrf_exempt
+def header_group_detail(request, pk):
+    try:
+        group = HeaderGroup.objects.prefetch_related('pages').get(pk=pk)
+    except HeaderGroup.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Header group not found'}, status=404)
+
+    if request.method == 'GET':
+        return JsonResponse({'success': True, 'group': PageBuilderService.serialize_header_group(group)})
+
+    if request.method in ['POST', 'PUT']:
+        try:
+            group = PageBuilderService.save_header_group(request, group)
+            return JsonResponse({'success': True, 'group': PageBuilderService.serialize_header_group(group)})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    if request.method == 'DELETE':
+        CustomPage.objects.filter(header_group=group).update(header_group=None)
+        group.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def public_header_nav(request):
+    if not HeaderGroup.objects.exists():
+        PageBuilderService.seed_default_header_groups()
+    groups = HeaderGroup.objects.filter(is_active=True).prefetch_related('pages').order_by('sort_order', 'title')
+    return JsonResponse({'data': [PageBuilderService.serialize_header_group(group) for group in groups]})

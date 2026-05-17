@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import create_product, all_data, item_delete, item_update,create_category,create_subcategory,all_categories,subcategories_by_category,create_payment,link_category_subcategory
+from .views import create_product, all_data, item_delete, item_update,create_category,create_subcategory,all_categories,all_subcategories,subcategories_by_category,delete_category,delete_subcategory,create_payment,link_category_subcategory
 from .views import update_slider,get_slider,manage_announcement,sale_products,total_products_count,get_product_by_sku,update_stock
-from .views import page_list_create,page_detail_update_delete,page_by_slug,header_pages
+from .views import page_list_create,page_detail_update_delete,page_by_slug,header_pages,header_group_list_create,header_group_detail,public_header_nav
 
 urlpatterns = [
     path('products/create/', create_product, name='create_product'),
@@ -11,8 +11,11 @@ urlpatterns = [
     
     path('categories/create/', create_category, name='create_category'),
     path('subcategories/create/', create_subcategory, name='create_subcategory'),
+    path('categories/<int:pk>/delete/', delete_category, name='delete_category'),
+    path('subcategories/<int:pk>/delete/', delete_subcategory, name='delete_subcategory'),
     
     path('categories/all/', all_categories, name='all_categories'),
+    path('subcategories/all/', all_subcategories, name='all_subcategories'),
     path('subcategories/<int:category_id>/', subcategories_by_category),
        
     path("create-payment/", create_payment, name="create-payment"),
@@ -28,6 +31,9 @@ path('pages/', page_list_create, name='page_list_create'),
 path('pages/<int:pk>/', page_detail_update_delete, name='page_detail_update_delete'),
 path('pages/slug/<slug:slug>/', page_by_slug, name='page_by_slug'),
 path('header-pages/', header_pages, name='header_pages'),
+path('header-groups/', header_group_list_create, name='header_group_list_create'),
+path('header-groups/<int:pk>/', header_group_detail, name='header_group_detail'),
+path('header-nav/', public_header_nav, name='public_header_nav'),
 
 
 ]

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Pencil, Trash2, Plus, X, Save, Tag, Image as ImageIcon } from "lucide-react";
 import URLS from "../urls";
+import LoadingButton from "../components/LoadingButton";
 
 const ProductForm = ({
   data, isEdit,
@@ -8,6 +9,8 @@ const ProductForm = ({
   setIsCreating, setEditProduct,
   fetchedCategories, fetchedSubcategories,
   editProduct, newProduct,
+  categoryDraft, setCategoryDraft, createCategory,
+  subcategoryDraft, setSubcategoryDraft, createSubcategory, actionLoading,
 
   setEdit,   
   setNew,
@@ -125,23 +128,66 @@ const ProductForm = ({
         </div>
 
         {/* Category */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-purple-500">
+              {fetchedCategories.length} saved
+            </span>
+          </div>
           <select name="category_id" value={data.category_id || ""} onChange={(e) => handleChange(e, isEdit)}
             className="w-full border-2 border-gray-100 p-2.5 rounded-xl outline-none focus:border-purple-500 bg-white text-sm" required>
-            <option value="">Select Category</option>
+            <option value="">{fetchedCategories.length ? "Select Category" : "No category yet"}</option>
             {fetchedCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
           </select>
+          <div className="rounded-xl border border-dashed border-purple-200 bg-purple-50/50 p-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={categoryDraft}
+                onChange={(e) => setCategoryDraft(e.target.value)}
+                placeholder="Create new category"
+                className="min-w-0 flex-1 rounded-lg border border-white bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none focus:border-purple-400"
+              />
+              <button
+                type="button"
+                onClick={() => createCategory(isEdit)}
+                disabled={actionLoading === "category"}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-purple-600 px-3 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-purple-700"
+              >
+                {actionLoading === "category" ? <span className="api-loader" /> : <Plus size={13} />} Add
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Subcategory */}
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label className="text-xs font-bold text-gray-500 uppercase ml-1">Subcategory</label>
           <select name="subcategory_id" value={data.subcategory_id || ""} onChange={(e) => handleChange(e, isEdit)}
             className="w-full border-2 border-gray-100 p-2.5 rounded-xl outline-none focus:border-purple-500 bg-white text-sm" disabled={!data.category_id}>
             <option value="">Select Subcategory</option>
             {fetchedSubcategories.map((sub) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
           </select>
+          <div className="rounded-xl border border-dashed border-fuchsia-200 bg-fuchsia-50/50 p-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={subcategoryDraft}
+                onChange={(e) => setSubcategoryDraft(e.target.value)}
+                placeholder="Create subcategory for selected category"
+                className="min-w-0 flex-1 rounded-lg border border-white bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none focus:border-fuchsia-400"
+              />
+              <button
+                type="button"
+                onClick={() => createSubcategory(isEdit)}
+                disabled={!data.category_id || actionLoading === "subcategory"}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-fuchsia-700 disabled:opacity-60"
+              >
+                {actionLoading === "subcategory" ? <span className="api-loader" /> : <Plus size={13} />} Add
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Size & Stock */}
@@ -204,9 +250,9 @@ const ProductForm = ({
       </div>
 
       <div className="mt-5 flex gap-3">
-        <button type="submit" className="flex items-center justify-center gap-2 bg-purple-600 text-white px-7 py-2.5 rounded-xl hover:bg-purple-700 font-bold transition-all shadow-lg shadow-purple-200 text-sm cursor-pointer">
+        <LoadingButton type="submit" loading={actionLoading === "product-save"} loadingText={isEdit ? "Updating..." : "Saving..."} className="flex items-center justify-center gap-2 bg-purple-600 text-white px-7 py-2.5 rounded-xl hover:bg-purple-700 font-bold transition-all shadow-lg shadow-purple-200 text-sm cursor-pointer">
           <Save size={16} /> {isEdit ? "Update Product" : "Save Product"}
-        </button>
+        </LoadingButton>
         <button type="button" onClick={() => { setIsCreating(false); setEditProduct(null); }}
           className="bg-gray-100 text-gray-600 px-7 py-2.5 rounded-xl hover:bg-gray-200 font-bold transition-all text-sm">
           Cancel
@@ -223,6 +269,9 @@ const ProductTable = () => {
   const [fetchedCategories, setFetchedCategories] = useState([]);
   const [fetchedSubcategories, setFetchedSubcategories] = useState([]);
   const [activeFilter, setActiveFilter] = useState("ALL");
+  const [categoryDraft, setCategoryDraft] = useState("");
+  const [subcategoryDraft, setSubcategoryDraft] = useState("");
+  const [actionLoading, setActionLoading] = useState("");
 
   const initialState = {
     product_name: "", brand: "RANGRAAZ", product_type: "",
@@ -255,6 +304,103 @@ const ProductTable = () => {
   };
 
   useEffect(() => { fetchProducts(); fetchCategories(); }, []);
+
+  const refreshProductAdmin = async (categoryId = null) => {
+    await Promise.all([fetchProducts(), fetchCategories()]);
+    if (categoryId) await fetchSubcategories(categoryId);
+  };
+
+  const createCategory = async (isEdit = false) => {
+    const name = categoryDraft.trim();
+    if (!name) {
+      alert("Please enter a category name.");
+      return;
+    }
+
+    try {
+      setActionLoading("category");
+      const response = await fetch(URLS.createCategory, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(result.error || "Could not create category.");
+        return;
+      }
+
+      setFetchedCategories((prev) => {
+        const exists = prev.some((cat) => String(cat.id) === String(result.id));
+        return exists ? prev : [...prev, result].sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      if (isEdit) {
+        setEditProduct((prev) => ({ ...prev, category_id: String(result.id), subcategory_id: "" }));
+      } else {
+        setNewProduct((prev) => ({ ...prev, category_id: String(result.id), subcategory_id: "" }));
+      }
+      setFetchedSubcategories([]);
+      setCategoryDraft("");
+    } catch (error) {
+      console.error("Error creating category:", error);
+      alert("API Error: " + error);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const createSubcategory = async (isEdit = false) => {
+    const name = subcategoryDraft.trim();
+    const categoryId = isEdit ? editProduct?.category_id : newProduct.category_id;
+    if (!categoryId) {
+      alert("Please select or create a category first.");
+      return;
+    }
+    if (!name) {
+      alert("Please enter a subcategory name.");
+      return;
+    }
+
+    try {
+      setActionLoading("subcategory");
+      const subRes = await fetch(URLS.createSubcategory, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const sub = await subRes.json();
+      if (!subRes.ok) {
+        alert(sub.error || "Could not create subcategory.");
+        return;
+      }
+
+      const linkRes = await fetch(URLS.linkCategorySubcategory, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category_id: categoryId, subcategory_id: sub.id }),
+      });
+      const link = await linkRes.json();
+      if (!linkRes.ok) {
+        alert(link.error || "Could not link subcategory.");
+        return;
+      }
+
+      await fetchSubcategories(categoryId);
+      if (isEdit) {
+        setEditProduct((prev) => ({ ...prev, subcategory_id: String(sub.id) }));
+      } else {
+        setNewProduct((prev) => ({ ...prev, subcategory_id: String(sub.id) }));
+      }
+      setSubcategoryDraft("");
+    } catch (error) {
+      console.error("Error creating subcategory:", error);
+      alert("API Error: " + error);
+    } finally {
+      setActionLoading("");
+    }
+  };
 
   const fetchSubcategories = async (categoryId) => {
     if (!categoryId) { setFetchedSubcategories([]); return; }
@@ -318,28 +464,123 @@ const ProductTable = () => {
     }
     const url = isEdit ? URLS.updateProduct(currentData.id) : URLS.createProduct;
     try {
+      setActionLoading("product-save");
       const response = await fetch(url, { method: "POST", body: formData });
       const result = await response.json();
       if (response.ok) {
         alert(isEdit ? "Updated Successfully!" : "Product Added Successfully!");
-        setEditProduct(null); setIsCreating(false); fetchProducts();
+        setEditProduct(null);
+        setIsCreating(false);
+        setNewProduct(initialState);
+        await refreshProductAdmin(currentData.category_id);
       } else { alert("Error: " + JSON.stringify(result)); }
-    } catch (error) { alert("API Error: " + error); }
+    } catch (error) {
+      alert("API Error: " + error);
+    } finally {
+      setActionLoading("");
+    }
   };
 
   const handleDelete = async (product) => {
     if (window.confirm(`Delete ${product.product_name}?`)) {
       try {
+        setActionLoading(`delete-product-${product.id}`);
         const response = await fetch(URLS.deleteProduct(product.id), { method: 'DELETE' });
-        if (response.ok) fetchProducts();
+        if (response.ok) await refreshProductAdmin(product.category_id);
       } catch (error) {
         console.error("Error deleting product:", error);
+      } finally {
+        setActionLoading("");
       }
+    }
+  };
+
+  const deleteCategory = async (category) => {
+    const productsInCategory = productsData.filter((product) => String(product.category_id) === String(category.id));
+    let replacement = null;
+
+    if (productsInCategory.length > 0) {
+      const choices = fetchedCategories
+        .filter((cat) => String(cat.id) !== String(category.id))
+        .map((cat) => `${cat.id}: ${cat.name}`)
+        .join("\n");
+      if (!choices) {
+        alert("Create another category first. Products must be moved before deleting this category.");
+        return;
+      }
+      replacement = window.prompt(
+        `${productsInCategory.length} product(s) use "${category.name}". Enter replacement category ID:\n${choices}`
+      );
+      if (!replacement) return;
+    }
+
+    if (!window.confirm(`Delete category "${category.name}"?`)) return;
+
+    try {
+      setActionLoading(`delete-category-${category.id}`);
+      const response = await fetch(URLS.deleteCategory(category.id), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ replacement_category_id: replacement }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        alert(result.error || "Could not delete category.");
+        return;
+      }
+      await refreshProductAdmin();
+    } catch (error) {
+      alert("API Error: " + error);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const deleteSubcategory = async (subcategory) => {
+    const productsInSubcategory = productsData.filter((product) => String(product.subcategory_id) === String(subcategory.id));
+    let replacement = null;
+
+    if (productsInSubcategory.length > 0) {
+      const choices = fetchedSubcategories
+        .filter((sub) => String(sub.id) !== String(subcategory.id))
+        .map((sub) => `${sub.id}: ${sub.name}`)
+        .join("\n");
+      if (!choices) {
+        alert("Create another subcategory first. Products must be moved before deleting this subcategory.");
+        return;
+      }
+      replacement = window.prompt(
+        `${productsInSubcategory.length} product(s) use "${subcategory.name}". Enter replacement subcategory ID:\n${choices}`
+      );
+      if (!replacement) return;
+    }
+
+    if (!window.confirm(`Delete subcategory "${subcategory.name}"?`)) return;
+
+    try {
+      setActionLoading(`delete-subcategory-${subcategory.id}`);
+      const categoryId = isCreating ? newProduct.category_id : editProduct?.category_id;
+      const response = await fetch(URLS.deleteSubcategory(subcategory.id), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ replacement_subcategory_id: replacement }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        alert(result.error || "Could not delete subcategory.");
+        return;
+      }
+      await refreshProductAdmin(categoryId);
+    } catch (error) {
+      alert("API Error: " + error);
+    } finally {
+      setActionLoading("");
     }
   };
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
+      {actionLoading && <div className="api-progress" />}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -355,6 +596,72 @@ const ProductTable = () => {
         )}
       </div>
 
+      <div className="mb-5 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-2xl border border-purple-100 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">Categories</h2>
+            <span className="rounded-full bg-purple-50 px-2 py-1 text-[10px] font-black text-purple-600">{fetchedCategories.length}</span>
+          </div>
+          <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+            {fetchedCategories.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-purple-200 bg-purple-50 p-3 text-xs text-slate-500">
+                No categories yet. Use the product form to create the first one.
+              </p>
+            ) : fetchedCategories.map((cat) => {
+              const count = productsData.filter((product) => String(product.category_id) === String(cat.id)).length;
+              return (
+                <div key={cat.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{cat.name}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{count} products</p>
+                  </div>
+                  <LoadingButton
+                    loading={actionLoading === `delete-category-${cat.id}`}
+                    loadingText="Deleting"
+                    onClick={() => deleteCategory(cat)}
+                    className="rounded-lg border border-red-100 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500 hover:text-white"
+                  >
+                    Delete
+                  </LoadingButton>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-fuchsia-100 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">Selected Category Subcategories</h2>
+            <span className="rounded-full bg-fuchsia-50 px-2 py-1 text-[10px] font-black text-fuchsia-600">{fetchedSubcategories.length}</span>
+          </div>
+          <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+            {fetchedSubcategories.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-fuchsia-200 bg-fuchsia-50 p-3 text-xs text-slate-500">
+                Select a category in the product form, then add subcategories for it.
+              </p>
+            ) : fetchedSubcategories.map((sub) => {
+              const count = productsData.filter((product) => String(product.subcategory_id) === String(sub.id)).length;
+              return (
+                <div key={sub.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{sub.name}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{count} products</p>
+                  </div>
+                  <LoadingButton
+                    loading={actionLoading === `delete-subcategory-${sub.id}`}
+                    loadingText="Deleting"
+                    onClick={() => deleteSubcategory(sub)}
+                    className="rounded-lg border border-red-100 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500 hover:text-white"
+                  >
+                    Delete
+                  </LoadingButton>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {isCreating && (
         <ProductForm
           key="create"
@@ -366,6 +673,13 @@ const ProductTable = () => {
           setEditProduct={setEditProduct}
           fetchedCategories={fetchedCategories}
           fetchedSubcategories={fetchedSubcategories}
+          categoryDraft={categoryDraft}
+          setCategoryDraft={setCategoryDraft}
+          createCategory={createCategory}
+          subcategoryDraft={subcategoryDraft}
+          setSubcategoryDraft={setSubcategoryDraft}
+          createSubcategory={createSubcategory}
+          actionLoading={actionLoading}
           editProduct={editProduct}
           newProduct={newProduct}
           setEdit={setEditProduct}
@@ -383,6 +697,13 @@ const ProductTable = () => {
           setEditProduct={setEditProduct}
           fetchedCategories={fetchedCategories}
           fetchedSubcategories={fetchedSubcategories}
+          categoryDraft={categoryDraft}
+          setCategoryDraft={setCategoryDraft}
+          createCategory={createCategory}
+          subcategoryDraft={subcategoryDraft}
+          setSubcategoryDraft={setSubcategoryDraft}
+          createSubcategory={createSubcategory}
+          actionLoading={actionLoading}
           editProduct={editProduct}
           newProduct={newProduct}
           setEdit={setEditProduct}
@@ -475,9 +796,9 @@ const ProductTable = () => {
                       className="p-2.5 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl transition-all border border-purple-100 shadow-sm">
                       <Pencil size={15} />
                     </button>
-                    <button onClick={() => handleDelete(product)}
+                    <button onClick={() => handleDelete(product)} disabled={actionLoading === `delete-product-${product.id}`}
                       className="p-2.5 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-red-100 shadow-sm">
-                      <Trash2 size={15} />
+                      {actionLoading === `delete-product-${product.id}` ? <span className="api-loader" /> : <Trash2 size={15} />}
                     </button>
                   </div>
                 </td>

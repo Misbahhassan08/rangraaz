@@ -187,6 +187,49 @@ html {
   animation: sheen 3.5s ease-in-out infinite;
 }
 
+.api-loader {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  animation: apiSpin 0.8s linear infinite;
+}
+
+.api-progress {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 9999;
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(91, 22, 214, 0.12);
+}
+
+.api-progress::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 38%;
+  background: linear-gradient(90deg, var(--brand-purple), var(--brand-pink), #fff);
+  animation: apiProgress 1s ease-in-out infinite;
+}
+
+@keyframes apiSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes apiProgress {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
 .app-shell {
   min-height: 100vh;
   background: var(--page-bg);

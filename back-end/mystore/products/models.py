@@ -160,6 +160,13 @@ class CustomPage(models.Model):
         related_name='nav_children'
     )
     nav_image = CloudinaryField('image', blank=True, null=True)
+    header_group = models.ForeignKey(
+        'HeaderGroup',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='pages'
+    )
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -195,3 +202,30 @@ class PageBlock(models.Model):
 
     def __str__(self):
         return f"{self.page.title} - {self.block_type}"
+
+
+class HeaderGroup(models.Model):
+    STYLE_CHOICES = [
+        ('standard', 'Standard'),
+        ('sale', 'Sale'),
+        ('featured', 'Featured'),
+    ]
+
+    title = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=120, unique=True)
+    direct_url = models.CharField(max_length=500, blank=True, null=True)
+    hover_title = models.CharField(max_length=120, blank=True, null=True)
+    hover_subtitle = models.CharField(max_length=255, blank=True, null=True)
+    hover_image = CloudinaryField('image', blank=True, null=True)
+    button_style = models.CharField(max_length=20, choices=STYLE_CHOICES, default='standard')
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    show_dropdown = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'title']
+
+    def __str__(self):
+        return self.title

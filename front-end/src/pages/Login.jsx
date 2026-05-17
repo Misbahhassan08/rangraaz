@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { ArrowRight, LockKeyhole, MapPin, Phone, Sparkles, UserRound } from "lucide-react";
 import URLS from "../urls";
+import LoadingButton from "../components/LoadingButton";
 
 const Login = () => {
   const navigate = useNavigate();
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -30,6 +33,7 @@ const Login = () => {
       alert("Google login failed");
       return;
     }
+    setGoogleLoading(true);
     try {
       const res = await fetch(URLS.GOOGLE_LOGIN, {
         method: "POST",
@@ -52,11 +56,14 @@ const Login = () => {
     } catch (err) {
       console.error(err);
       alert("Something went wrong during Google login.");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setAuthLoading(true);
 
     if (isSignUp) {
       try {
@@ -87,6 +94,8 @@ const Login = () => {
         toggleForm();
       } catch (error) {
         console.error("Network or server error during Sign-Up:", error);
+      } finally {
+        setAuthLoading(false);
       }
     } else {
       try {
@@ -121,6 +130,8 @@ const Login = () => {
       } catch (error) {
         console.error("Network or server error during Sign-In:", error);
         alert("Sign-In error. Check console for details.");
+      } finally {
+        setAuthLoading(false);
       }
     }
   };
@@ -220,13 +231,15 @@ const Login = () => {
               </label>
             )}
 
-            <button
+            <LoadingButton
               type="submit"
+              loading={authLoading}
+              loadingText={isSignUp ? "Creating..." : "Signing in..."}
               className="btn-brand group flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-all hover:-translate-y-0.5"
             >
               <span className="relative z-10">{isSignUp ? "Create Account" : "Sign In"}</span>
               <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </button>
+            </LoadingButton>
           </form>
 
           <div className="my-6 flex items-center gap-3">
@@ -236,6 +249,7 @@ const Login = () => {
           </div>
 
           <div className="flex justify-center">
+            {googleLoading && <div className="api-progress" />}
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={() => console.log("Google login failed")}

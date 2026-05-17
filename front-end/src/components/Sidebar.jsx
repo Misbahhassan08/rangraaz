@@ -11,6 +11,7 @@ import {
   FileText,
   Barcode,
   ScanLine,
+  Navigation,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -27,7 +28,7 @@ const Sidebar = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-5 left-5 z-50 bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white p-2.5 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
+        className="fixed left-4 top-4 z-[70] rounded-full bg-gradient-to-r from-[#8D33F6] to-[#E034F5] p-3 text-white shadow-xl shadow-purple-500/25 transition hover:scale-105 lg:hidden"
         aria-label="Toggle menu"
       >
         {isOpen ? <X size={22} /> : <Menu size={22} />}
@@ -37,15 +38,15 @@ const Sidebar = () => {
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm lg:hidden"
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen w-64 bg-gradient-to-b from-[#8D33F6] to-[#E034F5] text-white p-6 flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out z-50
+        className={`fixed left-0 top-0 z-[60] flex h-dvh w-[82vw] max-w-72 flex-col overflow-y-auto bg-gradient-to-b from-[#8D33F6] to-[#E034F5] p-6 text-white shadow-2xl transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0 lg:static`}
+        lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0`}
       >
         {/* Logo / Title */}
         <div className="mb-10 text-center lg:text-left">
@@ -101,6 +102,17 @@ const Sidebar = () => {
           >
             <FileText size={18} />
             <span>Pages</span>
+          </NavLink>
+
+          <NavLink
+            to="/dashboard/header-builder"
+            onClick={() => setIsOpen(false)}
+            className={({ isActive }) =>
+              `${linkClass} ${isActive ? activeClass : "text-white/80 hover:text-white"}`
+            }
+          >
+            <Navigation size={18} />
+            <span>Header Builder</span>
           </NavLink>
 
           <NavLink

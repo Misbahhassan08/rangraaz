@@ -4,11 +4,9 @@ import { Outlet } from 'react-router-dom';
 
 const DashboardLayout = () => {
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <div style={{ width: '250px', height: '100%', backgroundColor: 'black' }}>
-        <Sidebar />
-      </div>
-      <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+    <div className="min-h-screen bg-gray-50 lg:flex">
+      <Sidebar />
+      <div className="min-w-0 flex-1 overflow-x-hidden px-4 pb-6 pt-20 lg:h-screen lg:overflow-y-auto lg:px-6 lg:pt-6">
         <Outlet />
       </div>
     </div>

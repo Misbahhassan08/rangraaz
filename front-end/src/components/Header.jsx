@@ -15,11 +15,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import productStore from "../store/Productstore";
 import URLS from "../urls";
 
-const collections = [
-  { name: "Ally's", id: "ALLY'S", image: "/img/image1.webp", subs: ["Fancy", "Casual"] },
-  { name: "Heera's", id: "HEERA'S", image: "/img/image2.webp", subs: ["Fancy", "Casual"] },
-  { name: "Rangraaz", id: "Rangraaz", image: "/img/image3.webp", subs: ["2 Piece", "3 Piece", "Maxi"] },
-];
+const fallbackHoverImages = {
+  allys: "/img/image1.webp",
+  heeras: "/img/image2.webp",
+  rangraaz: "/img/image3.webp",
+  sale: "/img/logo2.png",
+};
 
 const Header = () => {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
-  const [customPages, setCustomPages] = useState([]);
+  const [headerGroups, setHeaderGroups] = useState([]);
   const searchRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
@@ -68,10 +69,10 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
-    fetch(URLS.headerPages)
+    fetch(URLS.headerNav)
       .then((res) => res.json())
-      .then((data) => setCustomPages(data.data || []))
-      .catch((err) => console.error("Error fetching header pages:", err));
+      .then((data) => setHeaderGroups(data.data || []))
+      .catch((err) => console.error("Error fetching header navigation:", err));
   }, []);
 
   useEffect(() => {
@@ -92,11 +93,6 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const isSubActive = (catId, sub) => {
-    const params = new URLSearchParams(location.search);
-    return params.get("category") === catId && params.get("subcategory") === sub;
-  };
 
   const submitSearch = () => {
     const cleanQuery = query.trim();
@@ -120,115 +116,72 @@ const Header = () => {
   const iconButton =
     "relative grid h-10 w-10 place-items-center rounded-full border border-[var(--border-soft)] bg-[var(--surface-glass)] text-[var(--text-muted)] transition-all hover:-translate-y-0.5 hover:border-[var(--brand-pink)] hover:text-[var(--brand-pink)] hover:shadow-lg";
 
-  const renderCollections = (mobile = false) => (
+  const groupLinkClass = (group, mobile = false) => {
+    if (mobile) {
+      return group.button_style === "sale"
+        ? "block rounded-2xl bg-red-500 px-4 py-3 text-sm font-semibold text-white"
+        : "block px-4 py-3 text-sm font-medium text-[var(--text-main)]";
+    }
+    if (group.button_style === "sale") {
+      return "rounded-full bg-red-500 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600";
+    }
+    if (group.button_style === "featured") {
+      return "rounded-full bg-[var(--brand-purple)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-lg shadow-purple-500/20 transition hover:bg-[var(--brand-pink)]";
+    }
+    return "rounded-full px-4 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-main)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--brand-pink)]";
+  };
+
+  const groupHref = (group) => group.direct_url || (group.pages?.[0] ? `/page/${group.pages[0].slug}` : "/allproducts");
+
+  const renderNavigation = (mobile = false) => (
     <div className={mobile ? "space-y-3" : "flex items-center gap-1"}>
-      {collections.map((cat) => (
-        <div key={cat.id} className={mobile ? "rounded-2xl border border-[var(--border-soft)]" : "group relative py-4"}>
+      {headerGroups.map((group) => {
+        const children = group.show_dropdown ? group.pages || [] : [];
+        const dropdownKey = `group-${group.id}`;
+        const hoverImage = group.hover_image_url || fallbackHoverImages[group.slug];
+        return (
+        <div key={group.id} className={mobile ? "rounded-2xl border border-[var(--border-soft)]" : "group relative py-4"}>
           {mobile ? (
-            <button
-              onClick={() => setActiveDropdown(activeDropdown === cat.id ? null : cat.id)}
-              className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--text-main)]"
-            >
-              <span>{cat.name}</span>
-              <span className="text-lg text-[var(--brand-pink)]">{activeDropdown === cat.id ? "-" : "+"}</span>
-            </button>
+            children.length > 0 ? (
+              <button
+                onClick={() => setActiveDropdown(activeDropdown === dropdownKey ? null : dropdownKey)}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--text-main)]"
+              >
+                <span>{group.title}</span>
+                <span className="text-lg text-[var(--brand-pink)]">{activeDropdown === dropdownKey ? "-" : "+"}</span>
+              </button>
+            ) : (
+              <Link to={groupHref(group)} className={groupLinkClass(group, true)}>{group.title}</Link>
+            )
           ) : (
             <Link
-              to={`/allproducts?category=${cat.id}`}
-              className="rounded-full px-4 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-main)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--brand-pink)]"
+              to={groupHref(group)}
+              className={groupLinkClass(group)}
             >
-              {cat.name}
+              {group.title}
             </Link>
           )}
 
-          <div
-            className={
-              mobile
-                ? `${activeDropdown === cat.id ? "block" : "hidden"} px-3 pb-3`
-                : "invisible absolute left-1/2 top-full z-50 w-[430px] -translate-x-1/2 translate-y-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
-            }
-          >
-            <div className={mobile ? "space-y-2" : "brand-menu overflow-hidden rounded-3xl"}>
-              {!mobile && (
-                <div className="relative h-44 overflow-hidden">
-                  <img src={cat.image} alt={cat.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <p className="absolute bottom-4 left-5 font-display text-2xl font-medium text-white">{cat.name}</p>
-                </div>
-              )}
-              <div className={mobile ? "space-y-1" : "grid grid-cols-2 gap-2 p-4"}>
-                {cat.subs.map((sub) => {
-                  const active = isSubActive(cat.id, sub);
-                  return (
-                    <Link
-                      key={sub}
-                      to={`/allproducts?category=${cat.id}&subcategory=${sub}`}
-                      className={`rounded-2xl px-4 py-3 text-sm transition-all ${
-                        active
-                          ? "bg-[var(--brand-pink)] text-white shadow-lg"
-                          : "bg-[var(--surface-soft)] text-[var(--text-muted)] hover:bg-[var(--brand-purple)] hover:text-white"
-                      }`}
-                    >
-                      {sub}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-      <Link
-        to="/allproducts?sale=true"
-        className={mobile
-          ? "block rounded-2xl bg-red-500 px-4 py-3 text-sm font-semibold text-white"
-          : "rounded-full bg-red-500 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600"
-        }
-      >
-        Sale
-      </Link>
-      {customPages
-        .filter((page) => !page.nav_parent)
-        .map((page) => {
-          const children = customPages.filter((child) => child.nav_parent === page.id);
-          return (
-            <div key={page.id} className={mobile ? "rounded-2xl border border-[var(--border-soft)]" : "group relative py-4"}>
-              {mobile ? (
-                children.length > 0 ? (
-                  <button
-                    onClick={() => setActiveDropdown(activeDropdown === `page-${page.id}` ? null : `page-${page.id}`)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--text-main)]"
-                  >
-                    <span>{page.nav_label}</span>
-                    <span className="text-lg text-[var(--brand-pink)]">{activeDropdown === `page-${page.id}` ? "-" : "+"}</span>
-                  </button>
-                ) : (
-                  <Link to={`/page/${page.slug}`} className="block px-4 py-3 text-sm font-medium text-[var(--text-main)]">
-                    {page.nav_label}
-                  </Link>
-                )
-              ) : (
-                <Link
-                  to={`/page/${page.slug}`}
-                  className="rounded-full px-4 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-main)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--brand-pink)]"
-                >
-                  {page.nav_label}
-                </Link>
-              )}
-
-              {children.length > 0 && (
+          {children.length > 0 && (
                 <div
                   className={
                     mobile
-                      ? `${activeDropdown === `page-${page.id}` ? "block" : "hidden"} px-3 pb-3`
+                      ? `${activeDropdown === dropdownKey ? "block" : "hidden"} px-3 pb-3`
                       : "invisible absolute left-1/2 top-full z-50 w-[380px] -translate-x-1/2 translate-y-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
                   }
                 >
-                  <div className={mobile ? "space-y-2" : "brand-menu overflow-hidden rounded-3xl p-3"}>
-                    {!mobile && page.nav_image_url && (
-                      <img src={page.nav_image_url} alt={page.nav_label} className="mb-3 h-36 w-full rounded-2xl object-cover" />
+                  <div className={mobile ? "space-y-2" : "brand-menu overflow-hidden rounded-3xl"}>
+                    {!mobile && hoverImage && (
+                      <div className="relative h-44 overflow-hidden">
+                        <img src={hoverImage} alt={group.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                        <div className="absolute bottom-4 left-5 right-5">
+                          <p className="font-display text-2xl font-medium text-white">{group.hover_title || group.title}</p>
+                          {group.hover_subtitle && <p className="mt-1 line-clamp-2 text-xs text-white/75">{group.hover_subtitle}</p>}
+                        </div>
+                      </div>
                     )}
-                    <div className="space-y-2">
+                    <div className={mobile ? "space-y-2" : "grid grid-cols-2 gap-2 p-4"}>
                       {children.map((child) => (
                         <Link
                           key={child.id}
@@ -242,9 +195,8 @@ const Header = () => {
                   </div>
                 </div>
               )}
-            </div>
-          );
-        })}
+        </div>
+      )})}
     </div>
   );
 
@@ -270,7 +222,7 @@ const Header = () => {
             </span>
           </Link>
 
-          <nav className="hidden flex-1 justify-center lg:flex">{renderCollections()}</nav>
+          <nav className="hidden flex-1 justify-center lg:flex">{renderNavigation()}</nav>
 
           <div className="flex items-center gap-2">
             <div className="relative hidden sm:block">
@@ -344,7 +296,7 @@ const Header = () => {
             className="w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--text-main)] outline-none"
           />
         </div>
-        {renderCollections(true)}
+        {renderNavigation(true)}
         {isAdmin && (
           <Link to="/dashboard" className="mt-4 block rounded-2xl border border-[var(--border-soft)] px-4 py-3 text-sm font-medium text-[var(--brand-pink)]">
             Admin Dashboard

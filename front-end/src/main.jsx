@@ -25,6 +25,7 @@ import PrivateRoute from "./PrivateRoute.jsx";
 import QuickSearch from "./pages/QuickSearch.jsx";
 import PageBuilder from "./pages/PageBuilder.jsx";
 import DynamicPage from "./pages/DynamicPage.jsx";
+import HeaderBuilder from "./pages/HeaderBuilder.jsx";
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   "897625668141-c53cp1fdekd0du1l21k22jm9qg637912.apps.googleusercontent.com";
@@ -65,6 +66,7 @@ const router = createBrowserRouter([
       { path: "manage-slider", element: <ManageSlider /> },
       { path: "barcode-manager", element: <Barcodemanager /> },
       { path: "pages", element: <PageBuilder /> },
+      { path: "header-builder", element: <HeaderBuilder /> },
       {path:"/dashboard/pos", element:<QuickSearch />} 
 
 
