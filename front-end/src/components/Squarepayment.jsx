@@ -49,7 +49,7 @@ const SquarePayment = ({
   return (
     <div style={{ maxWidth: 500, margin: "0 auto", padding: 20 }}>
       <h2>Square Payment</h2>
-      <p>Amount to pay: <strong>Rs. {amount}</strong></p>
+<p>Amount to pay: <strong>${(amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong></p>
 
       <PaymentForm
         applicationId="sandbox-sq0idb-zfj02OZgMyPq-I0GBC-a4g"
@@ -59,7 +59,7 @@ const SquarePayment = ({
         <CreditCard
           buttonProps={{
             isLoading: loading,
-            text: `Pay Rs. ${amount}`
+text: `Pay $${(amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
           }}
         />
       </PaymentForm>

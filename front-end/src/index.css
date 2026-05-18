@@ -116,9 +116,12 @@ html {
 }
 
 @keyframes floatSoft {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -129,6 +132,7 @@ html {
     opacity: 0;
     transform: translateY(18px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -139,6 +143,7 @@ html {
   0% {
     transform: translateX(-120%) skewX(-18deg);
   }
+
   100% {
     transform: translateX(220%) skewX(-18deg);
   }
@@ -225,6 +230,7 @@ html {
   0% {
     transform: translateX(-120%);
   }
+
   100% {
     transform: translateX(280%);
   }
@@ -309,4 +315,71 @@ html {
   background-color: rgba(18, 11, 23, 0.72);
   border-color: var(--border-soft);
   color: var(--text-main);
+}
+
+
+
+/* swiper js start */
+.swiper {
+  width: 100%;
+  height: 100vh;
+  padding-bottom: 100px !important;
+  padding-top: 16px;
+  padding-bottom: 16px;
+
+}
+
+.swiper-slide {
+  overflow: visible;
+}
+
+/* Pagination container row */
+.swiper-pagination {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  bottom: 20px !important;
+  flex-wrap: nowrap;
+
+}
+
+
+
+/* Make pagination bullets auto-size */
+.swiper-pagination-bullet {
+  width: auto !important;
+  height: auto !important;
+  background: none !important;
+  /* removes default circle */
+  opacity: 1 !important;
+  margin: 0 8px !important;
+  /* spacing between thumbnails */
+}
+
+/* Styling for the active bullet */
+.swiper-pagination-bullet-active img {
+  border: 2px solid black;
+}
+
+.swiper-zoom-container {
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 999999 !important;
+}
+
+
+
+/* Cursor change */
+.zoom-img {
+  cursor: crosshair;
+}
+
+.swiper-slide-zoomed .zoom-img {
+  cursor: zoom-out;
+}
+
+.dragging {
+  cursor: grabbing !important;
+  cursor: -webkit-grabbing !important;
 }

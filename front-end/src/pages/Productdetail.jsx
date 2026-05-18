@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import productStore from "../store/Productstore";
 import { HeartPlus, Handbag } from "lucide-react";
+import Zoomer from "../components/Zoomer";
 
 const Productdetail = () => {
+  const [showZoomer, setShowZoomer] = useState(false);
   const quantity = productStore((state) => state.quantity);
   const increaseQuantity = productStore((state) => state.increaseQuantity);
   const decreaseQuantity = productStore((state) => state.decreaseQuantity);
@@ -16,41 +18,41 @@ const Productdetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-const { id, price, title, product_type, image_url, size, images, size_stocks } = location.state || {};
+  const { id, price, title, product_type, image_url, size, images, size_stocks } = location.state || {};
 
   const allImages = images && images.length > 0 ? images : (image_url ? [{ image_url }] : []);
   const [selectedImage, setSelectedImage] = React.useState(allImages[0]?.image_url || image_url);
   const [selectedSize, setSelectedSize] = React.useState(null);
 
-const availableSizes = (size_stocks && size_stocks.length > 0)
-  ? size_stocks.map(ss => ss.size)
-  : size ? size.split(",").map(s => s.trim()) : [];  const formatPrice = (p) => Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const handleAddToCart = () => {
-  if (!selectedSize && (size_stocks || []).length > 0) {
-    setAddedMessage("Please select a size.");
-    setTimeout(() => setAddedMessage(""), 2000);
-    return;
-  }
+  const availableSizes = (size_stocks && size_stocks.length > 0)
+    ? size_stocks.map(ss => ss.size)
+    : size ? size.split(",").map(s => s.trim()) : []; const formatPrice = (p) => Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const handleAddToCart = () => {
+    if (!selectedSize && (size_stocks || []).length > 0) {
+      setAddedMessage("Please select a size.");
+      setTimeout(() => setAddedMessage(""), 2000);
+      return;
+    }
 
-  const stockItem = (size_stocks || []).find(ss => ss.size === selectedSize);
-  const availableQty = stockItem ? stockItem.quantity : 0;
+    const stockItem = (size_stocks || []).find(ss => ss.size === selectedSize);
+    const availableQty = stockItem ? stockItem.quantity : 0;
 
-  if (quantity > availableQty) {
-    setAddedMessage(`Only ${availableQty} item(s) available in size ${selectedSize}.`);
-    setTimeout(() => setAddedMessage(""), 3000);
-    return;
-  }
+    if (quantity > availableQty) {
+      setAddedMessage(`Only ${availableQty} item(s) available in size ${selectedSize}.`);
+      setTimeout(() => setAddedMessage(""), 3000);
+      return;
+    }
 
-  if (availableQty === 0) {
-    setAddedMessage(`Size ${selectedSize} is out of stock.`);
-    setTimeout(() => setAddedMessage(""), 3000);
-    return;
-  }
+    if (availableQty === 0) {
+      setAddedMessage(`Size ${selectedSize} is out of stock.`);
+      setTimeout(() => setAddedMessage(""), 3000);
+      return;
+    }
 
-  addToCart({ id, title, price, image_url, product_type, size: selectedSize, quantity });
-  setAddedMessage("Added to cart!");
-  setTimeout(() => { setAddedMessage(""); navigate("/cart"); }, 500);
-};
+    addToCart({ id, title, price, image_url, product_type, size: selectedSize, quantity });
+    setAddedMessage("Added to cart!");
+    setTimeout(() => { setAddedMessage(""); navigate("/cart"); }, 500);
+  };
 
   const isFavorited = favorites.some((item) => item.id === id);
 
@@ -58,43 +60,47 @@ const handleAddToCart = () => {
     <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 p-4 sm:p-6 max-w-7xl mx-auto font-sans min-h-screen">
 
       {/* ✅ Image Section */}
- 
-<div className="flex-1 lg:sticky lg:top-6 flex flex-row gap-3 h-fit">
+      {/* Zoomer */}
+      {showZoomer && <Zoomer onClose={() => setShowZoomer(false)} imgArr={allImages} title={title} />}
 
-  {/* Left — Vertical Thumbnails */}
-  {allImages.length > 1 && (
-    <div className="flex flex-col gap-2">
-      {allImages.map((img, i) => (
-        <button
-          key={i}
-          onClick={() => setSelectedImage(img.image_url)}
-          className={`flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
-            selectedImage === img.image_url
-              ? "border-purple-600 shadow-md"
-              : "border-gray-100 hover:border-purple-300"
-          }`}
-        >
+      <div className="flex-1 lg:sticky lg:top-6 flex flex-row gap-3 h-fit">
+
+        {/* Left — Vertical Thumbnails */}
+        {allImages.length > 1 && (
+          <div className="flex flex-col gap-2">
+            {allImages.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedImage(img.image_url)}
+                className={`flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all duration-200 ${selectedImage === img.image_url
+                    ? "border-purple-600 shadow-md"
+                    : "border-gray-100 hover:border-purple-300"
+                  }`}
+              >
+                <img
+              
+              onClick={()=> setShowZoomer(true)}
+                  src={img.image_url}
+                  alt={`view-${i}`}
+                  className="w-16 h-16 object-cover cursor-pointer"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Right — Main Image */}
+        <div className="flex-1 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100"
+          style={{ aspectRatio: '3/4' }}>
           <img
-            src={img.image_url}
-            alt={`view-${i}`}
-            className="w-16 h-16 object-cover"
+           onClick={()=> setShowZoomer(true)}
+            src={selectedImage}
+            alt={title}
+            className="w-full h-full object-cover cursor-pointer"
           />
-        </button>
-      ))}
-    </div>
-  )}
+        </div>
 
-  {/* Right — Main Image */}
-  <div className="flex-1 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100"
-       style={{ aspectRatio: '3/4' }}>
-    <img
-      src={selectedImage}
-      alt={title}
-      className="w-full h-full object-cover"
-    />
-  </div>
-
-</div>
+      </div>
 
       {/* Details Section */}
       <div className="flex-1 space-y-5 sm:space-y-6">
@@ -106,9 +112,8 @@ const handleAddToCart = () => {
           </h1>
           <HeartPlus
             onClick={() => toggleFavorite({ id, title, price, image_url, product_type, size })}
-            className={`cursor-pointer w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 transition-colors duration-200 ${
-              isFavorited ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-gray-600"
-            }`}
+            className={`cursor-pointer w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 transition-colors duration-200 ${isFavorited ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-gray-600"
+              }`}
             strokeWidth={1.5}
           />
         </div>
@@ -132,11 +137,10 @@ const handleAddToCart = () => {
                 <button
                   key={s}
                   onClick={() => setSelectedSize(s)}
-                  className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-sm sm:text-base font-medium border border-gray-300 rounded-xl hover:border-black transition-all duration-200 cursor-pointer ${
-                    selectedSize === s
+                  className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-sm sm:text-base font-medium border border-gray-300 rounded-xl hover:border-black transition-all duration-200 cursor-pointer ${selectedSize === s
                       ? "bg-black text-white border-black shadow-md"
                       : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   {s}
                 </button>
@@ -178,9 +182,8 @@ const handleAddToCart = () => {
 
         {/* Message */}
         {addedMessage && (
-          <div className={`text-center text-sm sm:text-base font-medium mt-4 p-3 rounded-lg ${
-            addedMessage.includes("Please") ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
-          }`}>
+          <div className={`text-center text-sm sm:text-base font-medium mt-4 p-3 rounded-lg ${addedMessage.includes("Please") ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
+            }`}>
             {addedMessage}
           </div>
         )}
