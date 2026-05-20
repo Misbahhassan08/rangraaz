@@ -9,6 +9,8 @@ const Checkout = () => {
   const navigate = useNavigate();
   const cart = productStore((state) => state.cart);
   const getTotalPrice = productStore((state) => state.getTotalPrice);
+  const clearCart = productStore((state) => state.clearCart);
+
 
   const [paymentDone, setPaymentDone] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
@@ -45,79 +47,62 @@ const Checkout = () => {
   const handleInputChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handlePlaceOrder = async (info) => {
-    if (
-      !formData.email ||
-      !formData.name ||
-      !formData.street1 ||
-      !formData.city ||
-      !formData.state ||
-      !formData.zip ||
-      !formData.country
-    ) {
-      alert("Please fill all the fields before placing order!");
-      return;
-    }
+const handlePlaceOrder = async (info) => {
+  if (!formData.email || !formData.name || !formData.street1 ||
+      !formData.city || !formData.state || !formData.zip || !formData.country) {
+    alert("Please fill all the fields before placing order!");
+    return;
+  }
+  if (!selectedOption) {
+    alert("Please select a payment method!");
+    return;
+  }
+  if (selectedOption === "bank" && !info) {
+    alert("Please complete card payment first!");
+    return;
+  }
 
-    if (!selectedOption) {
-      alert("Please select a payment method!");
-      return;
-    }
+  const currentUser = getCurrentUser();
 
-    if (selectedOption === "bank" && !info) {
-      alert("Please complete card payment first!");
-      return;
-    }
+  const products = cart.map((item) => ({
+    product_id: item.id,
+    name: item.title,
+    quantity: item.quantity,
+    price: item.price,
+  }));
 
-    const currentUser = getCurrentUser();
-    if (!currentUser?.id) {
-      alert("Please login before placing your order.");
-      navigate("/login");
-      return;
-    }
-
-    const products = cart.map((item) => ({
-      product_id: item.id,
-      name: item.title,
-      quantity: item.quantity,
-      price: item.price,
-    }));
-
-    const orderPayload = {
-      user: currentUser.id,
-      total_price: parseFloat(getTotalPrice().toFixed(2)),
-      shipment_id: "",
-      tracking_id: "",
-      shipping_address: formData,
-      payment_method:
-        selectedOption === "bank"
-          ? "CARD"
-          : selectedOption === "check"
-            ? "PAYPAL"
-            : "COD",
-      status: "PENDING",
-      products: products,
-      payment_info: info,
-    };
-
-    try {
-      const response = await fetch(URLS.createOrder, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderPayload),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSuccessOrder(data);
-      } else {
-        alert("Failed to place order: " + data.error);
-      }
-    } catch (error) {
-      console.error("Error placing order:", error);
-      alert("Something went wrong while placing order");
-    }
+  const orderPayload = {
+    user: currentUser?.id || null,
+    
+    total_price: parseFloat(getTotalPrice().toFixed(2)),
+    shipment_id: "",
+    tracking_id: "",
+    shipping_address: formData,
+    payment_method:
+      selectedOption === "bank" ? "CARD" :
+      selectedOption === "check" ? "PAYPAL" : "COD",
+    status: "PENDING",
+    products: products,
+    payment_info: info,
   };
+
+  try {
+    const response = await fetch(URLS.createOrder, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      setSuccessOrder(data);
+      clearCart();
+    } else {
+      alert("Failed to place order: " + data.error);
+    }
+  } catch (error) {
+    alert("Something went wrong while placing order");
+  }
+};
 
   // Success Page
   if (successOrder) {
@@ -254,6 +239,7 @@ const Checkout = () => {
                         onPaymentSuccess={(info) => {
                           setPaymentInfo(info);
                           setPaymentDone(true);
+                           handlePlaceOrder(info);
                         }}
                       />
                       {paymentDone && (

@@ -3,16 +3,23 @@ import Cartitem from '../components/Cartitem';
 import { useNavigate } from "react-router-dom";
 import productStore from '../store/Productstore';
 import { ShoppingBag, ArrowLeft, CreditCard, Truck } from 'lucide-react';
+import { useState } from 'react';
 
 const Cart = () => {
   const navigate = useNavigate();
   const cart = productStore((state) => state.cart);
   const getTotalPrice = productStore((state) => state.getTotalPrice);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const handleCheckout = () => {
+
+const handleCheckout = () => {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  if (!user?.id) {
+    setShowLoginModal(true);  
+  } else {
     navigate("/checkout");
-  };
-
+  }
+};
   const handleContinueShopping = () => {
     navigate("/allproducts");
   };
@@ -140,6 +147,45 @@ const Cart = () => {
           </div>
         )}
       </div>
+      {showLoginModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white rounded-xl p-8 max-w-sm w-full shadow-2xl text-center">
+      <h2 className="text-lg font-semibold text-gray-800 mb-2">
+        Want to track your orders?
+      </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Login to save your order history, or continue as a guest.
+      </p>
+
+      <button
+        onClick={() => {
+          setShowLoginModal(false);
+          navigate("/login");
+        }}
+        className="w-full bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white py-2 rounded-md mb-3 hover:opacity-90 transition"
+      >
+        Login
+      </button>
+
+      <button
+        onClick={() => {
+          setShowLoginModal(false);
+          navigate("/checkout");
+        }}
+        className="w-full border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-50 transition"
+      >
+        Continue without Login
+      </button>
+
+      <button
+        onClick={() => setShowLoginModal(false)}
+        className="mt-3 text-xs text-gray-400 hover:text-gray-600"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 };

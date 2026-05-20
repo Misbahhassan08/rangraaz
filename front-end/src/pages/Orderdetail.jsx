@@ -90,7 +90,7 @@ const OrderDetail = () => {
               <h3 className="text-sm font-semibold text-gray-700">Order Information</h3>
             </div>
             <div className="px-4 py-1">
-              <InfoRow label="User ID" value={order.user_id} />
+              <InfoRow label="User" value={order.user__name || "Guest"} />
               <InfoRow label="Shipment ID" value={order.shipment_id} mono />
               <InfoRow label="Tracking ID" value={order.tracking_id} mono />
               <InfoRow label="Payment Method" value={order.payment_method} />

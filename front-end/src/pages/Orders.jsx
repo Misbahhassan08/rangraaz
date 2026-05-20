@@ -181,10 +181,12 @@ const OrdersTable = () => {
                   </span>
                 </td>
 
-                {/* User ID */}
-                <td className="px-3 py-3 text-gray-600 text-xs">{order.user_id}</td>
 
-                {/* Shipment ID */}
+
+                {/* User Name */}
+                <td className="px-3 py-3 text-gray-600 text-xs">
+                  {order.user__name || "Guest"}
+                </td>                {/* Shipment ID */}
                 <td className="px-3 py-3">
                   <span className="text-xs text-gray-500 font-mono truncate block" title={order.shipment_id}>
                     {order.shipment_id || <span className="text-gray-300 not-italic">—</span>}
@@ -368,8 +370,8 @@ const OrdersTable = () => {
                         key={r.object_id}
                         onClick={() => setSelectedRate(r.object_id)}
                         className={`flex items-center justify-between p-3.5 rounded-xl border-2 cursor-pointer transition ${selectedRate === r.object_id
-                            ? "border-indigo-500 bg-indigo-50"
-                            : "border-gray-100 hover:border-gray-300"
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-gray-100 hover:border-gray-300"
                           }`}
                       >
                         <div className="flex items-center gap-3">

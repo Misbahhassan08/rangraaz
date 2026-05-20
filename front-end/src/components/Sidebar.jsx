@@ -12,10 +12,19 @@ import {
   Barcode,
   ScanLine,
   Navigation,
+  LogOut
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import ReactDOM from "react-dom";
+
+
+
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const navigate = useNavigate();
+
 
   const linkClass =
     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 hover:bg-white/10 text-sm font-medium";
@@ -161,7 +170,44 @@ const Sidebar = () => {
             <span>Manage Stock</span>
           </NavLink>
         </nav>
+        <button
+          onClick={() => setShowLogoutModal(true)}
+          className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer mt-6"
+        >
+          <LogOut size={14} />
+          Logout
+        </button>
 
+
+
+        {showLogoutModal && ReactDOM.createPortal(
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-[999]">
+            <div className="bg-white rounded-xl p-8 max-w-sm w-full shadow-2xl text-center mx-4">
+              <LogOut className="mx-auto mb-3 text-red-500" size={32} />
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">Logout?</h2>
+              <p className="text-sm text-gray-500 mb-6">Are you sure you want to logout?</p>
+
+              <button
+                onClick={() => {
+                  localStorage.removeItem("user");
+                  setShowLogoutModal(false);
+                  navigate("/login");
+                }}
+                className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-md mb-3 transition"
+              >
+                Yes, Logout
+              </button>
+
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="w-full border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>,
+          document.body  // 👈 ye magic hai — sidebar se bahar body mein render hoga
+        )}
         {/* Bottom Section */}
         <div className="mt-auto pt-10 space-y-2">
           <div className="pt-4 mt-4 border-t border-white/20">

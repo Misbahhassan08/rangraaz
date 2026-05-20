@@ -140,63 +140,64 @@ const Header = () => {
         const dropdownKey = `group-${group.id}`;
         const hoverImage = group.hover_image_url || fallbackHoverImages[group.slug];
         return (
-        <div key={group.id} className={mobile ? "rounded-2xl border border-[var(--border-soft)]" : "group relative py-4"}>
-          {mobile ? (
-            children.length > 0 ? (
-              <button
-                onClick={() => setActiveDropdown(activeDropdown === dropdownKey ? null : dropdownKey)}
-                className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--text-main)]"
-              >
-                <span>{group.title}</span>
-                <span className="text-lg text-[var(--brand-pink)]">{activeDropdown === dropdownKey ? "-" : "+"}</span>
-              </button>
-            ) : (
-              <Link to={groupHref(group)} className={groupLinkClass(group, true)}>{group.title}</Link>
-            )
-          ) : (
-            <Link
-              to={groupHref(group)}
-              className={groupLinkClass(group)}
-            >
-              {group.title}
-            </Link>
-          )}
-
-          {children.length > 0 && (
-                <div
-                  className={
-                    mobile
-                      ? `${activeDropdown === dropdownKey ? "block" : "hidden"} px-3 pb-3`
-                      : "invisible absolute left-1/2 top-full z-50 w-[380px] -translate-x-1/2 translate-y-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
-                  }
+          <div key={group.id} className={mobile ? "rounded-2xl border border-[var(--border-soft)]" : "group relative py-4"}>
+            {mobile ? (
+              children.length > 0 ? (
+                <button
+                  onClick={() => setActiveDropdown(activeDropdown === dropdownKey ? null : dropdownKey)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-[var(--text-main)]"
                 >
-                  <div className={mobile ? "space-y-2" : "brand-menu overflow-hidden rounded-3xl"}>
-                    {!mobile && hoverImage && (
-                      <div className="relative h-44 overflow-hidden">
-                        <img src={hoverImage} alt={group.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                        <div className="absolute bottom-4 left-5 right-5">
-                          <p className="font-display text-2xl font-medium text-white">{group.hover_title || group.title}</p>
-                          {group.hover_subtitle && <p className="mt-1 line-clamp-2 text-xs text-white/75">{group.hover_subtitle}</p>}
-                        </div>
+                  <span>{group.title}</span>
+                  <span className="text-lg text-[var(--brand-pink)]">{activeDropdown === dropdownKey ? "-" : "+"}</span>
+                </button>
+              ) : (
+                <Link to={groupHref(group)} className={groupLinkClass(group, true)}>{group.title}</Link>
+              )
+            ) : (
+              <Link
+                to={groupHref(group)}
+                className={groupLinkClass(group)}
+              >
+                {group.title}
+              </Link>
+            )}
+
+            {(children.length > 0 || (!mobile && hoverImage && group.show_dropdown)) && (
+              <div
+                className={
+                  mobile
+                    ? `${activeDropdown === dropdownKey ? "block" : "hidden"} px-3 pb-3`
+                    : "invisible absolute left-1/2 top-full z-50 w-[380px] -translate-x-1/2 translate-y-3 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+                }
+              >
+                <div className={mobile ? "space-y-2" : "brand-menu overflow-hidden rounded-3xl"}>
+                  {!mobile && hoverImage && (
+                    <div className="relative h-44 overflow-hidden">
+                      <img src={hoverImage} alt={group.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                      <div className="absolute bottom-4 left-5 right-5">
+                        <p className="font-display text-2xl font-medium text-white">{group.hover_title || group.title}</p>
+                        {group.hover_subtitle && <p className="mt-1 line-clamp-2 text-xs text-white/75">{group.hover_subtitle}</p>}
                       </div>
-                    )}
-                    <div className={mobile ? "space-y-2" : "grid grid-cols-2 gap-2 p-4"}>
-                      {children.map((child) => (
-                        <Link
-                          key={child.id}
-                          to={`/page/${child.slug}`}
-                          className="block rounded-2xl bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--text-muted)] hover:bg-[var(--brand-purple)] hover:text-white"
-                        >
-                          {child.nav_label}
-                        </Link>
-                      ))}
                     </div>
+                  )}
+                  <div className={mobile ? "space-y-2" : "grid grid-cols-2 gap-2 p-4"}>
+                    {children.map((child) => (
+                      <Link
+                        key={child.id}
+                        to={`/page/${child.slug}`}
+                        className="block rounded-2xl bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--text-muted)] hover:bg-[var(--brand-purple)] hover:text-white"
+                      >
+                        {child.nav_label}
+                      </Link>
+                    ))}
                   </div>
                 </div>
-              )}
-        </div>
-      )})}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   );
 

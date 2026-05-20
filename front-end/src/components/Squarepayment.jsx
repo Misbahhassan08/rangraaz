@@ -3,16 +3,22 @@ import { PaymentForm, CreditCard } from "react-square-web-payments-sdk";
 import URLS from "../urls";
 
 const SquarePayment = ({
-  amount = "1000",
+  amount,
   userEmail = "",
   userName = "",
-  onPaymentSuccess,
+  onPaymentSuccess,  
 }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [lastPayment, setLastPayment] = useState(null);
 
-  const handleCardTokenize = async (token) => {
+  const handleCardTokenize = async (tokenResult) => {
+    // ✅ Check tokenization errors first
+    if (tokenResult.status !== "OK") {
+      const errors = tokenResult.errors?.map(e => e.message).join(", ");
+      setMessage(`❌ Card error: ${errors}`);
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -22,71 +28,64 @@ const SquarePayment = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount,
-          sourceId: token.token,
-          email: userEmail, 
-          name: userName    
+          sourceId: tokenResult.token,
+          email: userEmail,
+          name: userName,
         }),
       });
 
       const data = await response.json();
 
       if (data.success && data.payment) {
-        setLastPayment(data.payment);
-        setMessage("✅ Payment successful! Check your email for receipt.");
+        setMessage("✅ Payment confirmed! Placing your order...");
         onPaymentSuccess?.(data.payment);
       } else {
-        const errorDetail = data.error?.errors?.[0]?.detail || "Payment failed";
-        setMessage(` ${errorDetail}`);
+        const errorDetail =
+          data.error?.errors?.[0]?.detail ||
+          data.message ||
+          "Payment failed. Please try again.";
+        setMessage(`❌ ${errorDetail}`);
       }
     } catch (err) {
       console.error(err);
-      setMessage(" Something went wrong with the connection.");
+      setMessage("❌ Connection error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const displayAmount = (amount / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+
   return (
     <div style={{ maxWidth: 500, margin: "0 auto", padding: 20 }}>
       <h2>Square Payment</h2>
-<p>Amount to pay: <strong>${(amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong></p>
+      <p>Amount to pay: <strong>{displayAmount}</strong></p>
 
       <PaymentForm
-        applicationId="sandbox-sq0idb-zfj02OZgMyPq-I0GBC-a4g"
-        locationId="L3WDNCFTQPMF"
+        applicationId="sandbox-sq0idb-rnOm7jeBKql3BQ-GyEMqGg"
+        locationId="L3WDNCFTQPMF"   
         cardTokenizeResponseReceived={handleCardTokenize}
       >
         <CreditCard
-          buttonProps={{
-            isLoading: loading,
-text: `Pay $${(amount / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
-          }}
-        />
+          buttonProps={{ isLoading: loading }}
+        >
+          {loading ? "Processing..." : `Pay ${displayAmount}`}
+        </CreditCard>
       </PaymentForm>
 
       {message && (
         <p style={{
-          marginTop: "10px",
-          padding: "10px",
-          borderRadius: "5px",
+          marginTop: 10,
+          padding: 10,
+          borderRadius: 5,
           backgroundColor: message.startsWith("✅") ? "#e6f4ea" : "#fce8e6",
-          color: message.startsWith("✅") ? "#0b8043" : "#b00020"
+          color: message.startsWith("✅") ? "#0b8043" : "#b00020",
         }}>
           {message}
         </p>
-      )}
-
-      {lastPayment && (
-        <div style={{ marginTop: 20, padding: 20, border: "1px solid #ccc", borderRadius: 8, background: "#f9f9f9" }}>
-          <h3>Order Confirmed!</h3>
-          <p><strong>Status:</strong> {lastPayment.status}</p>
-          <p><strong>Payment ID:</strong> {lastPayment.id}</p>
-          {lastPayment.receipt_url && (
-            <a href={lastPayment.receipt_url} target="_blank" rel="noreferrer" style={{ color: "#0070f3" }}>
-              Download Receipt
-            </a>
-          )}
-        </div>
       )}
     </div>
   );

@@ -17,6 +17,8 @@ const Adminshome = () => {
   const [stats, setStats] = useState({
     totalOrders: 0, pending: 0, processing: 0, delivered: 0, totalProducts: 0
   });
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
 
   // Graph states - current week
   const [weeklyLabels, setWeeklyLabels] = useState([]);
@@ -48,7 +50,7 @@ const Adminshome = () => {
 
           // --- 1. LOGIC: Last 7 Days (Current Week) ---
           const last7Days = {};
-          const dayLabels = []; 
+          const dayLabels = [];
           for (let i = 6; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
@@ -237,13 +239,7 @@ const Adminshome = () => {
         <header className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">Admins Dashboard</h2>
           <button
-            onClick={() => {
-              const confirmed = window.confirm("Are you sure you want to logout?");
-              if (confirmed) {
-                localStorage.removeItem("user");
-                navigate("/login");
-              }
-            }}
+            onClick={() => setShowLogoutModal(true)}
             className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm"
           >
             <LogOut size={14} />
@@ -304,6 +300,37 @@ const Adminshome = () => {
           </div>
         </div>
       </div>
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-[100]">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full shadow-2xl text-center mx-4">
+            <LogOut className="mx-auto mb-3 text-red-500" size={32} />
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              Logout?
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to logout?
+            </p>
+
+            <button
+              onClick={() => {
+                localStorage.removeItem("user");
+                setShowLogoutModal(false);
+                navigate("/login");
+              }}
+              className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-md mb-3 transition"
+            >
+              Yes, Logout
+            </button>
+
+            <button
+              onClick={() => setShowLogoutModal(false)}
+              className="w-full border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

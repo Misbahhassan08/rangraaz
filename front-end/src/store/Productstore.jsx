@@ -51,6 +51,7 @@ const productStore = create(
           }
         }),
 
+        clearCart: () => set({ cart: [] }),
       removeFromCart: (id, size) =>
         set((state) => ({
           cart: state.cart.filter(
