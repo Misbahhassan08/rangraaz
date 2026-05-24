@@ -26,6 +26,13 @@ class Products(models.Model):
         null=True, 
         related_name='products'
     )
+    sub_subcategory = models.ForeignKey(
+    'SubSubCategory',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name='products'
+    )
     
     size = models.CharField(max_length=50, blank=True, null=True)
     vendor = models.CharField(max_length=255)
@@ -94,8 +101,30 @@ class CategorySubCategory(models.Model):
         return f"{self.category.name} - {self.subcategory.name}"
     
     
-    
-    
+class SubSubCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+class SubCategorySubSubCategory(models.Model):
+    subcategory = models.ForeignKey(
+        SubCategory, 
+        on_delete=models.CASCADE, 
+        related_name='sub_subcategories'
+    )
+    sub_subcategory = models.ForeignKey(
+        SubSubCategory, 
+        on_delete=models.CASCADE, 
+        related_name='subcategories'
+    )
+
+    class Meta:
+        unique_together = ('subcategory', 'sub_subcategory')
+
+    def __str__(self):
+        return f"{self.subcategory.name} → {self.sub_subcategory.name}"
     
     
     

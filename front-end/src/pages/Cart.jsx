@@ -12,14 +12,14 @@ const Cart = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
 
 
-const handleCheckout = () => {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  if (!user?.id) {
-    setShowLoginModal(true);  
-  } else {
-    navigate("/checkout");
-  }
-};
+  const handleCheckout = () => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    if (!user?.id) {
+      setShowLoginModal(true);
+    } else {
+      navigate("/checkout");
+    }
+  };
   const handleContinueShopping = () => {
     navigate("/allproducts");
   };
@@ -27,7 +27,7 @@ const handleCheckout = () => {
   // Calculate total items
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
- 
+
   const calculateSavings = () => {
     return 0;
   };
@@ -73,7 +73,7 @@ const handleCheckout = () => {
 
             {/* Cart Items Section */}
             <div className="flex-1 space-y-3 sm:space-y-4 ">
-             
+
 
               {/* Cart Items */}
               {cart.map((product) => (
@@ -137,7 +137,7 @@ const handleCheckout = () => {
                 {/* Checkout Button */}
                 <button
                   onClick={handleCheckout}
-                  className="w-full bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-500/20py-3 sm:py-4 rounded-xl hover:bg-purple-700 transition duration-200 text-sm sm:text-base font-bold flex items-center justify-center gap-2 mb-3 cursor-pointer"
+                  className="w-full bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-500/20 py-3 sm:py-4 rounded-xl hover:opacity-90 transition duration-200 text-sm sm:text-base font-bold flex items-center justify-center gap-2 mb-3 cursor-pointer"
                 >
                   <CreditCard size={18} />
                   Proceed to Checkout
@@ -148,44 +148,44 @@ const handleCheckout = () => {
         )}
       </div>
       {showLoginModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white rounded-xl p-8 max-w-sm w-full shadow-2xl text-center">
-      <h2 className="text-lg font-semibold text-gray-800 mb-2">
-        Want to track your orders?
-      </h2>
-      <p className="text-sm text-gray-500 mb-6">
-        Login to save your order history, or continue as a guest.
-      </p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full shadow-2xl text-center">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              Want to track your orders?
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Login to save your order history, or continue as a guest.
+            </p>
 
-      <button
-        onClick={() => {
-          setShowLoginModal(false);
-          navigate("/login");
-        }}
-        className="w-full bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white py-2 rounded-md mb-3 hover:opacity-90 transition"
-      >
-        Login
-      </button>
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                navigate("/login");
+              }}
+              className="w-full bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white py-2 rounded-md mb-3 hover:opacity-90 transition"
+            >
+              Login
+            </button>
 
-      <button
-        onClick={() => {
-          setShowLoginModal(false);
-          navigate("/checkout");
-        }}
-        className="w-full border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-50 transition"
-      >
-        Continue without Login
-      </button>
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                navigate("/checkout");
+              }}
+              className="w-full border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-50 transition"
+            >
+              Continue without Login
+            </button>
 
-      <button
-        onClick={() => setShowLoginModal(false)}
-        className="mt-3 text-xs text-gray-400 hover:text-gray-600"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-)}
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="mt-3 text-xs text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

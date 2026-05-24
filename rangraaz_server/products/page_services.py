@@ -16,6 +16,8 @@ class PageBuilderService:
             'category_id': product.category_id,
             'sub_category': product.subcategory.name if product.subcategory else 'N/A',
             'subcategory_id': product.subcategory_id,
+            'sub_subcategory': product.sub_subcategory.name if product.sub_subcategory else 'N/A',  # ← ADD
+            'sub_subcategory_id': product.sub_subcategory_id,
             'original_price': product.original_price,
             'sell_price': product.sell_price,
             'discount_percentage': product.discount_percentage,
@@ -56,22 +58,46 @@ class PageBuilderService:
         }
 
         if include_blocks:
-            data['blocks'] = [cls.serialize_block(block) for block in page.blocks.all()]
+            data['blocks'] = [cls.serialize_block(block, page=page) for block in page.blocks.all()]
+
 
         return data
 
     @classmethod
-    def serialize_block(cls, block):
+    def serialize_block(cls, block, page=None):
         products = []
         product_ids = [int(pid) for pid in block.product_ids or [] if str(pid).isdigit()]
 
-        if block.block_type == 'products' and product_ids:
-            product_qs = Products.objects.filter(id__in=product_ids).select_related(
-                'category',
-                'subcategory',
+        # if block.block_type == 'products' and product_ids:
+        #     product_qs = Products.objects.filter(id__in=product_ids).select_related(
+        #         'category',
+        #         'subcategory',
+        #     ).prefetch_related('images', 'size_stocks')
+        #     product_map = {product.id: cls.product_to_dict(product) for product in product_qs}
+        #     products = [product_map[pid] for pid in product_ids if pid in product_map]
+        # NAYA — replace karo upar wale se:
+        if block.block_type == 'products':
+            manual_qs = Products.objects.filter(id__in=product_ids).select_related(
+                'category', 'subcategory','sub_subcategory',
             ).prefetch_related('images', 'size_stocks')
-            product_map = {product.id: cls.product_to_dict(product) for product in product_qs}
+            product_map = {p.id: cls.product_to_dict(p) for p in manual_qs}
             products = [product_map[pid] for pid in product_ids if pid in product_map]
+
+            if page is not None:
+                page_title = (page.nav_label or page.title or '').strip()
+                try:
+                    from .models import SubCategory
+                    matched_sub = SubCategory.objects.get(name__iexact=page_title)
+                    auto_qs = Products.objects.filter(
+                        subcategory=matched_sub,
+                        category__name__iexact=page.header_group.title 
+                    ).select_related('category', 'subcategory','sub_subcategory').prefetch_related('images', 'size_stocks')
+                    existing_ids = {p['id'] for p in products}
+                    for p in auto_qs:
+                        if p.id not in existing_ids:
+                            products.append(cls.product_to_dict(p))
+                except SubCategory.DoesNotExist:
+                    pass
 
         return {
             'id': block.id,

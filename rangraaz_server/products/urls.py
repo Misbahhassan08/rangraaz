@@ -1,5 +1,13 @@
-from django.urls import path
-from .views import create_product, all_data, item_delete, item_update,create_category,create_subcategory,all_categories,all_subcategories,subcategories_by_category,delete_category,delete_subcategory,create_payment,link_category_subcategory
+from django.ur
+path('sub-subcategories/create/', create_sub_subcategory, name='create_sub_subcategory'),
+path('sub-subcategories/by-subcategory/<int:subcategory_id>/', sub_subcategories_by_subcategory ,name='sub_subcategories_by_subcategory'),
+path('sub-subcategories/link/', link_subcategory_sub_subcategory, name='link_subcategory_sub_subcategory'),
+path('sub-subcategories/delete/<int:pk>/', delete_sub_subcategory,name='delete_sub_subcategory'),
+
+
+]
+ls import path
+from .views import create_product, all_data, item_delete, item_update,create_category,create_subcategory,all_categories,all_subcategories,subcategories_by_category,delete_category,delete_subcategory,create_payment,link_category_subcategory,create_sub_subcategory,sub_subcategories_by_subcategory,link_subcategory_sub_subcategory,delete_sub_subcategory
 from .views import update_slider,get_slider,manage_announcement,sale_products,total_products_count,get_product_by_sku,update_stock
 from .views import page_list_create,page_detail_update_delete,page_by_slug,header_pages,header_group_list_create,header_group_detail,public_header_nav
 
@@ -34,6 +42,3 @@ path('header-pages/', header_pages, name='header_pages'),
 path('header-groups/', header_group_list_create, name='header_group_list_create'),
 path('header-groups/<int:pk>/', header_group_detail, name='header_group_detail'),
 path('header-nav/', public_header_nav, name='public_header_nav'),
-
-
-]

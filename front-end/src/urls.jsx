@@ -54,7 +54,9 @@ const URLS = {
   updateUserRole: (userId) => `${BASE_URL}/update-role/${userId}/`,
   deleteUser: (id) => `${BASE_URL}/delete-user/${id}/`,
   deleteOrder: (id) => `${BASE_URL}/orders/delete/${id}/`,
-
+fetchSubSubCategories: (subcategoryId) => `${BASE_URL}/products/sub-subcategories/by-subcategory/${subcategoryId}/`,
+createSubSubCategory: `${BASE_URL}/products/sub-subcategories/create/`,
+linkSubCategorySubSubCategory: `${BASE_URL}/products/sub-subcategories/link/`,
 
 };
 

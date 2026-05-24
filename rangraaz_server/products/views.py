@@ -3,6 +3,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from .models import Products, CategorySubCategory, Category, SubCategory, ProductImage,SizeStock
+from .models import SubSubCategory, SubCategorySubSubCategory
+
 import os
 import uuid
 import requests
@@ -34,6 +36,8 @@ def product_to_dict(product):
         'category_id': product.category_id,
         'sub_category': product.subcategory.name if product.subcategory else "N/A",
         'subcategory_id': product.subcategory_id,
+        'sub_subcategory': product.sub_subcategory.name if product.sub_subcategory else "N/A",
+        'sub_subcategory_id': product.sub_subcategory_id,
         'original_price': product.original_price,
         'sell_price': product.sell_price,
         'discount_percentage': product.discount_percentage,
@@ -257,6 +261,7 @@ def create_product(request):
 
         category_id = request.POST.get('category_id') or None
         subcategory_id = request.POST.get('subcategory_id') or None
+        sub_subcategory_id = request.POST.get('sub_subcategory_id') or None
         if not category_id:
             return JsonResponse({'error': 'Category is required.'}, status=400)
 
@@ -265,7 +270,8 @@ def create_product(request):
             original_price=float(request.POST.get('original_price')),
             category_id=category_id,
             subcategory_id=subcategory_id,
-            quantity=0,  # ab SizeStock se calculate hoga
+            sub_subcategory_id=sub_subcategory_id,
+            quantity=0,  
             sku=sku,
             vendor=request.POST.get('vendor'),
             is_sale_on=request.POST.get('is_sale_on') == "true",
@@ -300,7 +306,7 @@ def create_product(request):
 @require_http_methods(["GET"])
 def all_data(request):
     try:
-        products = Products.objects.select_related('category', 'subcategory').prefetch_related('images', 'size_stocks').all()
+        products = Products.objects.select_related('category', 'subcategory','sub_subcategory' ).prefetch_related('images', 'size_stocks').all()
 
         data = []
         for product in products:
@@ -378,6 +384,8 @@ def item_update(request, pk):
             return JsonResponse({'error': 'Category is required.'}, status=400)
         item.category_id = category_id
     if 'subcategory_id' in request.POST: item.subcategory_id = request.POST.get('subcategory_id') or None
+    if 'sub_subcategory_id' in request.POST:                              
+        item.sub_subcategory_id = request.POST.get('sub_subcategory_id') or None
 
     # Size stocks update
     size_stocks_raw = request.POST.get('size_stocks', '')
@@ -394,7 +402,7 @@ def item_update(request, pk):
 
     item.save()
 
-    # Nai images
+    # New images
     for index, img in enumerate(request.FILES.getlist('images')):
         ProductImage.objects.create(product=item, image=img, order=item.images.count() + index)
 
@@ -900,3 +908,101 @@ def public_header_nav(request):
         PageBuilderService.seed_default_header_groups()
     groups = HeaderGroup.objects.filter(is_active=True).prefetch_related('pages').order_by('sort_order', 'title')
     return JsonResponse({'data': [PageBuilderService.serialize_header_group(group) for group in groups]})
+
+
+
+
+# SubSubCategory create
+@csrf_exempt
+@require_http_methods(["POST"])
+def create_sub_subcategory(request):
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    name = (data.get('name') or '').strip()
+    if not name:
+        return JsonResponse({'error': 'Name required'}, status=400)
+
+    obj, created = SubSubCategory.objects.get_or_create(
+        name__iexact=name,
+        defaults={'name': name}
+    )
+    return JsonResponse({
+        'id': obj.id, 
+        'name': obj.name,
+        'created': created
+    }, status=201 if created else 200)
+
+
+# SubSubCategories by SubCategory
+@csrf_exempt
+def sub_subcategories_by_subcategory(request, subcategory_id):
+    links = SubCategorySubSubCategory.objects.filter(
+        subcategory_id=subcategory_id
+    ).select_related('sub_subcategory')
+    data = [
+        {'id': l.sub_subcategory.id, 'name': l.sub_subcategory.name}
+        for l in links
+    ]
+    return JsonResponse({'data': data})
+
+
+# Link subcategory → sub_subcategory
+@csrf_exempt
+@require_http_methods(["POST"])
+def link_subcategory_sub_subcategory(request):
+    try:
+        data = json.loads(request.body)
+        subcategory_id = data.get('subcategory_id')
+        sub_subcategory_id = data.get('sub_subcategory_id')
+
+        if not subcategory_id or not sub_subcategory_id:
+            return JsonResponse({'error': 'Both IDs required'}, status=400)
+
+        subcategory = SubCategory.objects.get(id=subcategory_id)
+        sub_sub = SubSubCategory.objects.get(id=sub_subcategory_id)
+
+        relation, created = SubCategorySubSubCategory.objects.get_or_create(
+            subcategory=subcategory,
+            sub_subcategory=sub_sub
+        )
+        return JsonResponse({
+            'message': 'Linked successfully' if created else 'Already linked'
+        }, status=201 if created else 200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# Delete sub_subcategory
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_sub_subcategory(request, pk):
+    try:
+        obj = SubSubCategory.objects.get(pk=pk)
+    except SubSubCategory.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    try:
+        data = json.loads(request.body or '{}')
+    except:
+        data = {}
+
+    replacement_id = data.get('replacement_sub_subcategory_id')
+    count = Products.objects.filter(sub_subcategory=obj).count()
+
+    if count:
+        if not replacement_id:
+            return JsonResponse({
+                'error': 'Replacement required', 
+                'product_count': count
+            }, status=400)
+        replacement = SubSubCategory.objects.get(pk=int(replacement_id))
+        Products.objects.filter(sub_subcategory=obj).update(
+            sub_subcategory=replacement
+        )
+
+    obj.delete()
+    return JsonResponse({'message': 'Deleted successfully'})

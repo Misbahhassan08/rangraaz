@@ -11,8 +11,12 @@ const ProductForm = ({
   editProduct, newProduct,
   categoryDraft, setCategoryDraft, createCategory,
   subcategoryDraft, setSubcategoryDraft, createSubcategory, actionLoading,
+  fetchedSubSubCategories,      // ← ADD
+  subSubCategoryDraft,          // ← ADD
+  setSubSubCategoryDraft,       // ← ADD
+  createSubSubCategory,
 
-  setEdit,   
+  setEdit,
   setNew,
 }) => {
   const calculatedSalePrice = data.is_sale_on
@@ -189,6 +193,43 @@ const ProductForm = ({
             </div>
           </div>
         </div>
+        {/* Sub-Subcategory */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+            Sub-Subcategory (2Pc, 3Pc...)
+          </label>
+          <select
+            name="sub_subcategory_id"
+            value={data.sub_subcategory_id || ""}
+            onChange={(e) => handleChange(e, isEdit)}
+            className="w-full border-2 border-gray-100 p-2.5 rounded-xl outline-none focus:border-purple-500 bg-white text-sm"
+            disabled={!data.subcategory_id}
+          >
+            <option value="">Select Sub-Subcategory</option>
+            {fetchedSubSubCategories.map((sub) => (
+              <option key={sub.id} value={sub.id}>{sub.name}</option>
+            ))}
+          </select>
+          <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/50 p-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={subSubCategoryDraft}
+                onChange={(e) => setSubSubCategoryDraft(e.target.value)}
+                placeholder="Create new sub-subcategory"
+                className="min-w-0 flex-1 rounded-lg border border-white bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => createSubSubCategory(isEdit)}
+                disabled={!data.subcategory_id || actionLoading === "sub-subcategory"}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-3 py-2 text-xs font-black uppercase text-white hover:bg-violet-700 disabled:opacity-60"
+              >
+                {actionLoading === "sub-subcategory" ? <span className="api-loader" /> : <Plus size={13} />} Add
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Size & Stock */}
         <div className="space-y-2 col-span-1 md:col-span-3">
@@ -272,11 +313,13 @@ const ProductTable = () => {
   const [categoryDraft, setCategoryDraft] = useState("");
   const [subcategoryDraft, setSubcategoryDraft] = useState("");
   const [actionLoading, setActionLoading] = useState("");
+  const [fetchedSubSubCategories, setFetchedSubSubCategories] = useState([]);
+  const [subSubCategoryDraft, setSubSubCategoryDraft] = useState("");
 
   const initialState = {
     product_name: "", brand: "RANGRAAZ", product_type: "",
     image_files: [], size_stocks: [], sku: "", vendor: "",
-    category_id: "", subcategory_id: "", original_price: "",
+    category_id: "", subcategory_id: "", sub_subcategory_id: "", original_price: "",
     discount_percentage: 0, is_sale_on: false,
   };
 
@@ -401,6 +444,41 @@ const ProductTable = () => {
       setActionLoading("");
     }
   };
+  const createSubSubCategory = async (isEdit = false) => {
+    const name = subSubCategoryDraft.trim();
+    const subcategoryId = isEdit ? editProduct?.subcategory_id : newProduct.subcategory_id;
+
+    if (!subcategoryId) { alert("Pehle subcategory select karein."); return; }
+    if (!name) { alert("Naam likhein."); return; }
+
+    try {
+      setActionLoading("sub-subcategory");
+
+      const createRes = await fetch(URLS.createSubSubCategory, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const created = await createRes.json();
+      if (!createRes.ok) { alert(created.error || "Error"); return; }
+
+      const linkRes = await fetch(URLS.linkSubCategorySubSubCategory, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subcategory_id: subcategoryId, sub_subcategory_id: created.id }),
+      });
+      if (!linkRes.ok) { alert("Linking failed"); return; }
+
+      await fetchSubSubCategories(subcategoryId);
+      if (isEdit) setEditProduct(prev => ({ ...prev, sub_subcategory_id: String(created.id) }));
+      else setNewProduct(prev => ({ ...prev, sub_subcategory_id: String(created.id) }));
+      setSubSubCategoryDraft("");
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setActionLoading("");
+    }
+  };
 
   const fetchSubcategories = async (categoryId) => {
     if (!categoryId) { setFetchedSubcategories([]); return; }
@@ -413,6 +491,17 @@ const ProductTable = () => {
     }
   };
 
+  const fetchSubSubCategories = async (subcategoryId) => {
+    if (!subcategoryId) { setFetchedSubSubCategories([]); return; }
+    try {
+      const res = await fetch(URLS.fetchSubSubCategories(subcategoryId));
+      const data = await res.json();
+      setFetchedSubSubCategories(data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const uniqueCategories = ["ALL", ...new Set(productsData.map((p) => p.category_name || p.category).filter(Boolean))];
   const filteredProducts = activeFilter === "ALL"
     ? productsData
@@ -422,6 +511,7 @@ const ProductTable = () => {
     setEditProduct({ ...product, image_files: [], size_stocks: product.size_stocks || [] });
     setIsCreating(false);
     fetchSubcategories(product.category_id);
+    fetchSubSubCategories(product.subcategory_id);
   };
 
   const handleCreateClick = () => { setIsCreating(true); setEditProduct(null); setNewProduct(initialState); };
@@ -439,8 +529,18 @@ const ProductTable = () => {
     else setNewProduct(prev => ({ ...prev, [name]: val }));
     if (name === "category_id") {
       fetchSubcategories(value);
-      if (isEdit) setEditProduct(prev => ({ ...prev, subcategory_id: "" }));
-      else setNewProduct(prev => ({ ...prev, subcategory_id: "" }));
+      if (isEdit) setEditProduct(prev => ({
+        ...prev, subcategory_id: "", sub_subcategory_id: ""
+      }));
+      else setNewProduct(prev => ({
+        ...prev, subcategory_id: "", sub_subcategory_id: ""
+      }));
+    }
+
+    if (name === "subcategory_id") {
+      fetchSubSubCategories(value);
+      if (isEdit) setEditProduct(prev => ({ ...prev, sub_subcategory_id: "" }));
+      else setNewProduct(prev => ({ ...prev, sub_subcategory_id: "" }));
     }
   };
 
@@ -458,6 +558,8 @@ const ProductTable = () => {
     formData.append("vendor", currentData.vendor);
     formData.append("category_id", currentData.category_id);
     formData.append("subcategory_id", currentData.subcategory_id);
+    formData.append("sub_subcategory_id", currentData.sub_subcategory_id || "");
+
     formData.append("size_stocks", JSON.stringify(currentData.size_stocks || []));
     if (currentData.image_files?.length > 0) {
       currentData.image_files.forEach(file => formData.append("images", file));
@@ -679,6 +781,10 @@ const ProductTable = () => {
           subcategoryDraft={subcategoryDraft}
           setSubcategoryDraft={setSubcategoryDraft}
           createSubcategory={createSubcategory}
+          fetchedSubSubCategories={fetchedSubSubCategories}
+          subSubCategoryDraft={subSubCategoryDraft}
+          setSubSubCategoryDraft={setSubSubCategoryDraft}
+          createSubSubCategory={createSubSubCategory}
           actionLoading={actionLoading}
           editProduct={editProduct}
           newProduct={newProduct}
@@ -708,6 +814,10 @@ const ProductTable = () => {
           newProduct={newProduct}
           setEdit={setEditProduct}
           setNew={setNewProduct}
+           fetchedSubSubCategories={fetchedSubSubCategories}      
+    subSubCategoryDraft={subSubCategoryDraft}            
+    setSubSubCategoryDraft={setSubSubCategoryDraft}       
+    createSubSubCategory={createSubSubCategory}  
         />
       )}
 
