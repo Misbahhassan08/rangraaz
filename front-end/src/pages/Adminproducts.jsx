@@ -448,8 +448,8 @@ const ProductTable = () => {
     const name = subSubCategoryDraft.trim();
     const subcategoryId = isEdit ? editProduct?.subcategory_id : newProduct.subcategory_id;
 
-    if (!subcategoryId) { alert("Pehle subcategory select karein."); return; }
-    if (!name) { alert("Naam likhein."); return; }
+    if (!subcategoryId) { alert("Please select subcategroy first."); return; }
+    if (!name) { alert("Please enter a sub-subcategory name.."); return; }
 
     try {
       setActionLoading("sub-subcategory");
