@@ -47,7 +47,7 @@ const defaultSettings = {
     media_fit: "cover",
   },
   products: {
-    layout: "editorial",
+    layout: "grid",
     columns: 4,
     aspect: "portrait",
     show_price: true,
@@ -523,9 +523,9 @@ const BlockEditor = ({
             {block.block_type === "products" && (
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-3">
-                  <Select label="Product layout" value={block.settings?.layout || "editorial"} onChange={(value) => updateSetting(block.uid, "layout", value)} options={[
-                    ["editorial", "Editorial"],
+                  <Select label="Product layout" value={block.settings?.layout || "grid"} onChange={(value) => updateSetting(block.uid, "layout", value)} options={[
                     ["grid", "Clean grid"],
+                    ["editorial", "Editorial"],
                     ["spotlight", "Spotlight"],
                     ["carousel", "Horizontal scroll"],
                   ]} />
@@ -639,7 +639,7 @@ const positionStyle = (position = "left-bottom") => {
 
 const BlockPreview = ({ block, products }) => {
   if (block.block_type === "products") {
-    const layout = block.settings?.layout || "editorial";
+    const layout = block.settings?.layout || "grid";
     const aspect = block.settings?.aspect === "wide" ? "aspect-[4/3]" : block.settings?.aspect === "square" ? "aspect-square" : "aspect-[3/4]";
     const gridClass = layout === "carousel" ? "flex overflow-x-auto" : "grid grid-cols-2 gap-3";
     return (

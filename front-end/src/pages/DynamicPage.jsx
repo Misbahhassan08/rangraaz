@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import ProductItem from "../components/Productitem";
 import URLS from "../urls";
+import SizeDrawer from "./SizeDrawer";
 
 const DynamicPage = () => {
   const { slug } = useParams();
@@ -146,102 +147,111 @@ const DynamicPage = () => {
         : allProducts;
 
       return (
-        <section key={block.id} className="mx-auto max-w-[1440px] px-4 py-12 md:px-8">
 
-          {/* Heading */}
-          {!activeFilter && (
-            <div className={layout === "spotlight" ? "mb-8 text-left" : "mb-8 text-center"}>
-              <p className="mb-3 text-xs font-light uppercase tracking-[0.26em] text-[var(--brand-pink)]">
-                Shop the edit
-              </p>
-              <h2 className="text-4xl font-semibold text-[var(--text-main)]">
-                {block.title || "Featured Products"}
-              </h2>
-              {block.subtitle && (
-                <p className="mx-auto mt-3 max-w-2xl text-[var(--text-muted)]">{block.subtitle}</p>
-              )}
-            </div>
-          )}
+        <>
 
-          {subSubOptions.length > 0 && (
-            <div className="mb-10 flex flex-wrap justify-center gap-3">
 
-              {/* All button */}
-              <button
-                onClick={() => navigate(`/page/${slug}`)}
-                className={`relative rounded-full px-8 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 cursor-pointer ${!activeFilter
-                    ? "bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-300 scale-105"
-                    : "bg-white text-slate-500 border border-slate-200 hover:border-purple-400 hover:text-purple-500 hover:shadow-md"
-                  }`}
-              >
-                All
-              </button>
+          <section key={block.id} className="mx-auto max-w-[1440px] px-4 py-12 md:px-8">
 
-              {/* Sub-subcategory buttons */}
-              {subSubOptions.map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => navigate(`/page/${slug}?filter=${option.id}`)}
-                  className={` cursor-pointer relative rounded-full px-8 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 ${activeFilter === String(option.id)
-                      ? "bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-300 scale-105"
-                      : "bg-white text-slate-500 border border-slate-200 hover:border-purple-400 hover:text-purple-500 hover:shadow-md"
-                    }`}
-                >
-                  {option.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Products */}
-          <div
-            className={layout === "carousel" ? "flex gap-5 overflow-x-auto pb-3" : "grid gap-x-5 gap-y-12"}
-            style={gridStyle}
-          >
-            {products.map((product, index) => (
-              <div
-                key={product.id}
-                className={
-                  layout === "carousel" ? "w-64 shrink-0"
-                    : layout === "spotlight" && index === 0 ? "md:col-span-2 md:row-span-2"
-                      : ""
-                }
-              >
-                {layout === "grid" || layout === "carousel" || layout === "spotlight" ? (
-                  <ProductItem
-                    {...product}
-                    title={product.product_name}
-                    originalPrice={product.original_price}
-                    sellPrice={product.sell_price}
-                    isSaleOn={product.is_sale_on}
-                    size_stocks={product.size_stocks}
-                  />
-                ) : (
-                  <article className="group">
-                    <img
-                      src={product.image_url || "/img/logo2.png"}
-                      alt={product.product_name}
-                      className={`${aspectClass} w-full rounded-2xl object-cover transition duration-500 group-hover:scale-[1.02]`}
-                    />
-                    <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[var(--brand-pink)]">
-                      {product.vendor}
-                    </p>
-                    <h3 className="mt-1 text-base font-semibold text-[var(--text-main)]">
-                      {product.product_name}
-                    </h3>
-                    <p className="mt-1 text-sm text-[var(--text-muted)]">$ {product.sell_price}</p>
-                  </article>
+            {/* Heading */}
+            {!activeFilter && (
+              <div className={layout === "spotlight" ? "mb-8 text-left" : "mb-8 text-center"}>
+                <p className="mb-3 text-xs font-light uppercase tracking-[0.26em] text-[var(--brand-pink)]">
+                  Shop the edit
+                </p>
+                <h2 className="text-4xl font-semibold text-[var(--text-main)]">
+                  {block.title || "Featured Products"}
+                </h2>
+                {block.subtitle && (
+                  <p className="mx-auto mt-3 max-w-2xl text-[var(--text-muted)]">{block.subtitle}</p>
                 )}
               </div>
-            ))}
-
-            {products.length === 0 && (
-              <p className="col-span-full py-10 text-center text-sm text-[var(--text-muted)]">
-                No products found.
-              </p>
             )}
-          </div>
-        </section>
+
+            {subSubOptions.length > 0 && (
+              <div className="mb-10 flex flex-wrap justify-center gap-3">
+
+                {/* All button */}
+                <button
+                  onClick={() => navigate(`/page/${slug}`)}
+                  className={`relative rounded-full px-8 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 cursor-pointer ${!activeFilter
+                    ? "bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-300 scale-105"
+                    : "bg-white text-slate-500 border border-slate-200 hover:border-purple-400 hover:text-purple-500 hover:shadow-md"
+                    }`}
+                >
+                  All
+                </button>
+
+                {/* Sub-subcategory buttons */}
+                {subSubOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => navigate(`/page/${slug}?filter=${option.id}`)}
+                    className={` cursor-pointer relative rounded-full px-8 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 ${activeFilter === String(option.id)
+                      ? "bg-gradient-to-r from-[#8D33F6] to-[#E034F5] text-white shadow-lg shadow-purple-300 scale-105"
+                      : "bg-white text-slate-500 border border-slate-200 hover:border-purple-400 hover:text-purple-500 hover:shadow-md"
+                      }`}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Products */}
+            <div
+              className={layout === "carousel" ? "flex gap-5 overflow-x-auto pb-3" : "grid gap-x-5 gap-y-12"}
+              style={gridStyle}
+            >
+              {products.map((product, index) => (
+                <div
+                  key={product.id}
+                  className={
+                    layout === "carousel" ? "w-64 shrink-0"
+                      : layout === "spotlight" && index === 0 ? "md:col-span-2 md:row-span-2"
+                        : ""
+                  }
+                >
+                  {layout === "grid" || layout === "carousel" || layout === "spotlight" ? (
+                    <ProductItem
+                      {...product}
+                      title={product.product_name}
+                      originalPrice={product.original_price}
+                      sellPrice={product.sell_price}
+                      isSaleOn={product.is_sale_on}
+                      size_stocks={product.size_stocks}
+                    />
+                  ) : (
+                    <article className="group">
+                      <img
+                        src={product.image_url || "/img/logo2.png"}
+                        alt={product.product_name}
+                        className={`${aspectClass} w-full rounded-2xl object-cover transition duration-500 group-hover:scale-[1.02]`}
+                      />
+                      <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[var(--brand-pink)]">
+                        {product.vendor}
+                      </p>
+                      <h3 className="mt-1 text-base font-semibold text-[var(--text-main)]">
+                        {product.product_name}
+                      </h3>
+                      <p className="mt-1 text-sm text-[var(--text-muted)]">$ {product.sell_price}</p>
+                    </article>
+                  )}
+                </div>
+              ))}
+
+              {products.length === 0 && (
+                <p className="col-span-full py-10 text-center text-sm text-[var(--text-muted)]">
+                  No products found.
+                </p>
+              )}
+            </div>
+          </section>
+
+
+          
+        </>
+
       );
     }
   };

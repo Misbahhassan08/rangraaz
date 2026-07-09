@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Handbag } from "lucide-react";
 import SizeDrawer from "./../pages/SizeDrawer";
 
-const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_type, image_url, size, brand, images ,size_stocks}) => {
+const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_type, image_url, size, brand, images, size_stocks }) => {
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -26,7 +26,7 @@ const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_ty
 
   const handleNavigateToDetail = () => {
     navigate("/productdetail", {
-  state: { id, price: isSaleOn ? sellPrice : originalPrice, title, product_type, image_url, size, images, size_stocks },
+      state: { id, price: isSaleOn ? sellPrice : originalPrice, title, product_type, image_url, size, images, size_stocks },
     });
   };
 
@@ -46,9 +46,8 @@ const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_ty
               key={i}
               src={img || "/img/placeholder.jpg"}
               alt={title}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                i === activeIndex ? "opacity-100" : "opacity-0"
-              }`}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${i === activeIndex ? "opacity-100" : "opacity-0"
+                }`}
               loading="lazy"
             />
           ))}
@@ -62,9 +61,8 @@ const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_ty
               {allImages.map((_, i) => (
                 <span
                   key={i}
-                  className={`h-0.5 rounded-full transition-all duration-200 ${
-                    i === activeIndex ? "bg-white w-4" : "bg-white/50 w-2"
-                  }`}
+                  className={`h-0.5 rounded-full transition-all duration-200 ${i === activeIndex ? "bg-white w-4" : "bg-white/50 w-2"
+                    }`}
                 />
               ))}
             </div>
@@ -80,6 +78,8 @@ const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_ty
               <span className="text-[10px] font-bold tracking-wide">ADD</span>
             </button>
           </div>
+
+          
         </div>
 
         {/* Product Info */}
@@ -107,9 +107,9 @@ const ProductItem = ({ id, originalPrice, sellPrice, isSaleOn, title, product_ty
 
       {drawerOpen && (
         <SizeDrawer
-  product={{ id, originalPrice, sellPrice, isSaleOn, title, product_type, image_url, size, brand, size_stocks }}
-  onClose={() => setDrawerOpen(false)}
-/>
+          product={{ id, originalPrice, sellPrice, isSaleOn, title, product_type, image_url, size, brand, size_stocks }}
+          onClose={() => setDrawerOpen(false)}
+        />
       )}
     </>
   );

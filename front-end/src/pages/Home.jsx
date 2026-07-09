@@ -6,6 +6,7 @@ import { Mousewheel, Pagination, Autoplay } from "swiper/modules";
 import "./Style.css";
 import { useNavigate } from "react-router-dom";
 import URLS from "../urls";
+import Allproducts from "./Allproducts";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -124,6 +125,9 @@ const Home = () => {
           </Swiper>
         )}
       </div>
+
+
+      <Allproducts />
 
       {/* Content Section */}
       <div className="content-wrapper">

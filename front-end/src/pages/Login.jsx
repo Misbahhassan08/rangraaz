@@ -11,6 +11,7 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -21,16 +22,18 @@ const Login = () => {
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
     setFormData({ name: "", phone: "", password: "", address: "" });
+    setErrorMsg("");
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errorMsg) setErrorMsg("");
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
     const googleToken = credentialResponse.credential;
     if (!googleToken) {
-      alert("Google login failed");
+      setErrorMsg("Google login failed. Please try again.");
       return;
     }
     setGoogleLoading(true);
@@ -51,11 +54,11 @@ const Login = () => {
           navigate("/");
         }
       } else {
-        alert("Google login failed: " + data.message);
+        setErrorMsg(data.message || "Google login failed.");
       }
     } catch (err) {
       console.error(err);
-      alert("Something went wrong during Google login.");
+      setErrorMsg("Something went wrong during Google login.");
     } finally {
       setGoogleLoading(false);
     }
@@ -64,6 +67,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthLoading(true);
+    setErrorMsg("");
 
     if (isSignUp) {
       try {
@@ -74,8 +78,28 @@ const Login = () => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error("Sign-Up Error:", errorData);
+          let message;
+          if (response.status === 409) {
+            message = "An account with this phone number already exists.";
+          } else if (response.status === 400) {
+            message = "Please check your details and try again.";
+          } else if (response.status === 429) {
+            message = "Too many attempts. Please wait a moment and try again.";
+          } else if (response.status >= 500) {
+            message = "Something went wrong on our end. Please try again shortly.";
+          } else {
+            message = "Sign-up failed. Please try again.";
+          }
+          try {
+            const errorData = await response.json();
+            console.error("Sign-Up Error:", errorData);
+            if (response.status < 500 && errorData?.message) {
+              message = errorData.message;
+            }
+          } catch (parseErr) {
+            console.error("Sign-Up Error: could not parse error response", parseErr);
+          }
+          setErrorMsg(message);
           return;
         }
 
@@ -94,6 +118,7 @@ const Login = () => {
         toggleForm();
       } catch (error) {
         console.error("Network or server error during Sign-Up:", error);
+        setErrorMsg("Network error. Please check your connection and try again.");
       } finally {
         setAuthLoading(false);
       }
@@ -109,8 +134,29 @@ const Login = () => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error("Sign-In Error:", errorData);
+          let message;
+          if (response.status === 400 || response.status === 401) {
+            message = "Invalid phone number or password.";
+          } else if (response.status === 429) {
+            message = "Too many attempts. Please wait a moment and try again.";
+          } else if (response.status >= 500) {
+            message = "Something went wrong on our end. Please try again shortly.";
+          } else {
+            message = "Sign-in failed. Please try again.";
+          }
+          try {
+            const errorData = await response.json();
+            console.error("Sign-In Error:", errorData);
+            // Prefer the server's message only for expected client errors (4xx),
+            // where it's meant to be shown to the user. For 5xx, keep the generic
+            // message above rather than leaking internal error details.
+            if (response.status < 500 && errorData?.message) {
+              message = errorData.message;
+            }
+          } catch (parseErr) {
+            console.error("Sign-In Error: could not parse error response", parseErr);
+          }
+          setErrorMsg(message);
           return;
         }
 
@@ -129,7 +175,7 @@ const Login = () => {
         }
       } catch (error) {
         console.error("Network or server error during Sign-In:", error);
-        alert("Sign-In error. Check console for details.");
+        setErrorMsg("Sign-in error. Please try again in a moment.");
       } finally {
         setAuthLoading(false);
       }
@@ -173,6 +219,15 @@ const Login = () => {
               {isSignUp ? "Create Account" : "Welcome Back"}
             </h2>
           </div>
+
+          {errorMsg && (
+            <div
+              role="alert"
+              className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+            >
+              {errorMsg}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
@@ -252,7 +307,7 @@ const Login = () => {
             {googleLoading && <div className="api-progress" />}
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => console.log("Google login failed")}
+              onError={() => setErrorMsg("Google login failed.")}
               type="standard"
               shape="pill"
               theme="outline"
