@@ -1,5 +1,5 @@
 const BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "https://rangraazserver-382170497486.us-central1.run.app"
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/"
 ).replace(/\/+$/, "");
 const URLS = {
   // Products

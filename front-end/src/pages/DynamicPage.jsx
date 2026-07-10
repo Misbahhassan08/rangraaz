@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import ProductItem from "../components/Productitem";
 import URLS from "../urls";
 import SizeDrawer from "./SizeDrawer";
+import { HeartPlus } from "lucide-react";
+import productStore from "../store/Productstore";
 
 const DynamicPage = () => {
   const { slug } = useParams();
@@ -12,6 +14,8 @@ const DynamicPage = () => {
 
   const [page, setPage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const favorites = productStore((state) => state.favorites);
+  const toggleFavorite = productStore((state) => state.toggleFavorite);
 
   useEffect(() => {
     setLoading(true);
@@ -206,37 +210,28 @@ const DynamicPage = () => {
               {products.map((product, index) => (
                 <div
                   key={product.id}
-                  className={
-                    layout === "carousel" ? "w-64 shrink-0"
+                  className={`relative group ${layout === "carousel" ? "w-64 shrink-0"
                       : layout === "spotlight" && index === 0 ? "md:col-span-2 md:row-span-2"
                         : ""
-                  }
+                    }`}
                 >
-                  {layout === "grid" || layout === "carousel" || layout === "spotlight" ? (
-                    <ProductItem
-                      {...product}
-                      title={product.product_name}
-                      originalPrice={product.original_price}
-                      sellPrice={product.sell_price}
-                      isSaleOn={product.is_sale_on}
-                      size_stocks={product.size_stocks}
+                  <button
+                    onClick={() => toggleFavorite(product)}
+                    className="absolute right-4 top-4 z-10 rounded-full bg-[var(--surface-card)] p-2 opacity-0 shadow-sm transition-all duration-300 group-hover:opacity-100"
+                  >
+                    <HeartPlus
+                      className={`${favorites.some((f) => f.id === product.id) ? "text-red-500 fill-red-500" : "text-gray-400"}`}
+                      size={18}
                     />
-                  ) : (
-                    <article className="group">
-                      <img
-                        src={product.image_url || "/img/logo2.png"}
-                        alt={product.product_name}
-                        className={`${aspectClass} w-full rounded-2xl object-cover transition duration-500 group-hover:scale-[1.02]`}
-                      />
-                      <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[var(--brand-pink)]">
-                        {product.vendor}
-                      </p>
-                      <h3 className="mt-1 text-base font-semibold text-[var(--text-main)]">
-                        {product.product_name}
-                      </h3>
-                      <p className="mt-1 text-sm text-[var(--text-muted)]">$ {product.sell_price}</p>
-                    </article>
-                  )}
+                  </button>
+                  <ProductItem
+                    {...product}
+                    title={product.product_name}
+                    originalPrice={product.original_price}
+                    sellPrice={product.sell_price}
+                    isSaleOn={product.is_sale_on}
+                    size_stocks={product.size_stocks}
+                  />
                 </div>
               ))}
 
@@ -249,7 +244,7 @@ const DynamicPage = () => {
           </section>
 
 
-          
+
         </>
 
       );
