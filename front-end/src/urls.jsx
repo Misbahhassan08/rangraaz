@@ -13,6 +13,10 @@ const URLS = {
   fetchSlider: `${BASE_URL}/products/get-slider/`,
   saleProducts: `${BASE_URL}/products/sale-items/`,
   updateOrderShipment: (id) => `${BASE_URL}/orders/${id}/update-shipment/`,
+   // Shippo (shipping/carrier)
+  shippoCreateShipment: `https://api.goshippo.com/shipments/`,
+  shippoGetRates: (shipmentId) => `https://api.goshippo.com/shipments/${shipmentId}/rates/`,
+  shippoCreateTransaction: `https://api.goshippo.com/transactions/`,
 
   // Categories & Subcategories
   fetchCategories: `${BASE_URL}/products/categories/all/`,

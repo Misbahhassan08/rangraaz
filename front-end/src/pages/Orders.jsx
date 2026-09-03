@@ -30,13 +30,13 @@ const OrdersTable = () => {
   const [orders, setOrders] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
- const [formData, setFormData] = useState({
-  from_name: "", from_street1: "", from_city: "", from_state: "",
-  from_zip: "", from_country: "", from_email: "", from_phone: "",
-  to_name: "", to_street1: "", to_city: "", to_state: "",
-  to_zip: "", to_country: "", to_email: "", to_phone: "",
-  parcel_length: "", parcel_width: "", parcel_height: "", parcel_weight: "",
-});
+  const [formData, setFormData] = useState({
+    from_name: "", from_street1: "", from_city: "", from_state: "",
+    from_zip: "", from_country: "", from_email: "", from_phone: "",
+    to_name: "", to_street1: "", to_city: "", to_state: "",
+    to_zip: "", to_country: "", to_email: "", to_phone: "",
+    parcel_length: "", parcel_width: "", parcel_height: "", parcel_weight: "",
+  });
   const [rates, setRates] = useState([]);
   const [selectedRate, setSelectedRate] = useState(null);
   const [currentShipmentId, setCurrentShipmentId] = useState(null);
@@ -90,12 +90,12 @@ const OrdersTable = () => {
   const handleCreateShipment = async () => {
     setLoading(true);
     try {
-      const shipmentRes = await fetch("https://api.goshippo.com/shipments/", {
+      const shipmentRes = await fetch(URLS.shippoCreateShipment, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `ShippoToken ${SHIPPO_TOKEN}` },
         body: JSON.stringify({
-        address_from: { name: formData.from_name, street1: formData.from_street1, city: formData.from_city, state: formData.from_state, zip: formData.from_zip, country: formData.from_country, email: formData.from_email, phone: formData.from_phone },
-address_to: { name: formData.to_name, street1: formData.to_street1, city: formData.to_city, state: formData.to_state, zip: formData.to_zip, country: formData.to_country, email: formData.to_email, phone: formData.to_phone },
+          address_from: { name: formData.from_name, street1: formData.from_street1, city: formData.from_city, state: formData.from_state, zip: formData.from_zip, country: formData.from_country, email: formData.from_email, phone: formData.from_phone },
+          address_to: { name: formData.to_name, street1: formData.to_street1, city: formData.to_city, state: formData.to_state, zip: formData.to_zip, country: formData.to_country, email: formData.to_email, phone: formData.to_phone },
           parcels: [{ length: formData.parcel_length, width: formData.parcel_width, height: formData.parcel_height, distance_unit: "in", weight: formData.parcel_weight, mass_unit: "lb" }],
         }),
       });
@@ -103,7 +103,9 @@ address_to: { name: formData.to_name, street1: formData.to_street1, city: formDa
       console.log("Shippo response:", shipmentData);
       if (!shipmentData.object_id) { alert("Shipment creation failed!"); return; }
       setCurrentShipmentId(shipmentData.object_id);
-      const rateRes = await fetch(`https://api.goshippo.com/shipments/${shipmentData.object_id}/rates/`, { headers: { Authorization: `ShippoToken ${SHIPPO_TOKEN}` } });
+      const rateRes = await fetch(URLS.shippoGetRates(shipmentData.object_id), {
+        headers: { Authorization: `ShippoToken ${SHIPPO_TOKEN}` },
+      });
       const rateData = await rateRes.json();
       if (!rateData.results?.length) { alert("No rates available."); return; }
       setRates(rateData.results);
@@ -116,7 +118,7 @@ address_to: { name: formData.to_name, street1: formData.to_street1, city: formDa
     if (!selectedRate) { alert("Please select a rate first!"); return; }
     setLoading(true);
     try {
-      const transRes = await fetch("https://api.goshippo.com/transactions/", {
+      const transRes = await fetch(URLS.shippoCreateTransaction, {
         method: "POST",
         headers: { Authorization: `ShippoToken ${SHIPPO_TOKEN}`, "Content-Type": "application/json" },
         body: JSON.stringify({ rate: selectedRate, label_file_type: "PDF_4x6", async: false }),
@@ -320,14 +322,14 @@ address_to: { name: formData.to_name, street1: formData.to_street1, city: formDa
                             {dir} Address
                           </p>
                           <div className="space-y-2">
-{["name", "street1", "city", "state", "zip", "country", "email", "phone"].map((field) => (                              <input
-                                key={field}
-                                name={`${prefix}_${field}`}
-                                value={formData[`${prefix}_${field}`]}
-                                onChange={handleChange}
-                                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                                className={inputCls}
-                              />
+                            {["name", "street1", "city", "state", "zip", "country", "email", "phone"].map((field) => (<input
+                              key={field}
+                              name={`${prefix}_${field}`}
+                              value={formData[`${prefix}_${field}`]}
+                              onChange={handleChange}
+                              placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                              className={inputCls}
+                            />
                             ))}
                           </div>
                         </div>
