@@ -2,9 +2,9 @@ const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/"
 ).replace(/\/+$/, "");
 
-
+// const BASE_URL ="http://127.0.0.1:8000/"
 const URLS = {
-  // Products
+  // Products,
   fetchProducts: `${BASE_URL}/products/products/`,
   createProduct: `${BASE_URL}/products/products/create/`,
   updateProduct: (id) => `${BASE_URL}/products/products/${id}/update/`,

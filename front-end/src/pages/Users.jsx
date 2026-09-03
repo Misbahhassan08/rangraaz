@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import URLS from "../urls";
-import { Trash2, Users as UsersIcon, Plus, X } from "lucide-react";
+import { Trash2, Users as UsersIcon, Plus, X, Eye, EyeOff, User, Phone, Lock, MapPin } from "lucide-react";
 
 const ROLE_BADGE_STYLES = {
   superadmin: "bg-amber-50 text-amber-700",
@@ -39,6 +39,7 @@ const Users = () => {
   const [adminForm, setAdminForm] = useState(EMPTY_ADMIN_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     fetch(URLS.getAllUsers)
@@ -64,6 +65,7 @@ const Users = () => {
   const openAddAdmin = () => {
     setAdminForm(EMPTY_ADMIN_FORM);
     setFormError("");
+    setShowPassword(false);
     setShowAddAdmin(true);
   };
 
@@ -228,86 +230,131 @@ const Users = () => {
       {/* Add New Admin Dialog */}
       {showAddAdmin && (
         <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-50 p-4"
           onClick={closeAddAdmin}
         >
           <div
-            className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden"
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-gray-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="text-base font-bold text-gray-900">Add New Admin</h3>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <UsersIcon size={17} className="text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 leading-tight">Add New Admin</h3>
+                  <p className="text-xs text-gray-400">Grant a new user admin access</p>
+                </div>
+              </div>
               <button
                 onClick={closeAddAdmin}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateAdmin} className="px-5 py-4 space-y-3">
+            <form onSubmit={handleCreateAdmin} className="px-6 py-5 space-y-4">
               {formError && (
-                <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">
                   {formError}
                 </div>
               )}
 
+              {/* Name */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Name</label>
-                <input
-                  type="text"
-                  value={adminForm.name}
-                  onChange={handleFormChange("name")}
-                  required
-                  className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="e.g. Jane Doe"
+                    value={adminForm.name}
+                    onChange={handleFormChange("name")}
+                    required
+                    className="w-full text-sm pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 focus:bg-white transition"
+                  />
+                </div>
               </div>
 
+              {/* Phone */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={adminForm.phone}
-                  onChange={handleFormChange("phone")}
-                  required
-                  className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="tel"
+                    placeholder="e.g. +1 555 123 4567"
+                    value={adminForm.phone}
+                    onChange={handleFormChange("phone")}
+                    required
+                    className="w-full text-sm pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 focus:bg-white transition"
+                  />
+                </div>
               </div>
 
+              {/* Password with visibility toggle */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={adminForm.password}
-                  onChange={handleFormChange("password")}
-                  required
-                  className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter a secure password"
+                    value={adminForm.password}
+                    onChange={handleFormChange("password")}
+                    required
+                    autoComplete="new-password"
+                    className="w-full text-sm pl-9 pr-10 py-2.5 rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 focus:bg-white transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    title={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
 
+              {/* Address */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Address</label>
-                <input
-                  type="text"
-                  value={adminForm.address}
-                  onChange={handleFormChange("address")}
-                  className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Address</label>
+                <div className="relative">
+                  <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Optional"
+                    value={adminForm.address}
+                    onChange={handleFormChange("address")}
+                    className="w-full text-sm pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 focus:bg-white transition"
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 mt-5">
                 <button
                   type="button"
                   onClick={closeAddAdmin}
                   disabled={submitting}
-                  className="text-xs font-semibold px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-100 transition"
+                  className="text-xs font-semibold px-4 py-2.5 rounded-lg text-gray-500 hover:bg-gray-100 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="text-xs font-semibold px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition disabled:opacity-60"
+                  className="text-xs font-semibold px-5 py-2.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition disabled:opacity-60 shadow-sm"
                 >
                   {submitting ? "Creating..." : "Create Admin"}
                 </button>
