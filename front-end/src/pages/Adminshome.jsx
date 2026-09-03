@@ -114,15 +114,20 @@ const Adminshome = () => {
           });
 
           // --- 4. STATS UPDATE ---
+          // Status counts (pending / processing / delivered) reflect the CURRENT
+          // state of every order, regardless of when it was created. An order
+          // placed 2 weeks ago that just moved to "Delivered" today still needs
+          // to be counted. Only totalOrders stays scoped to "this week" since
+          // that card is meant to show recent order volume, not status.
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
           const weeklyOrders = allOrders.filter(o => new Date(o.created_at) >= sevenDaysAgo);
 
           setStats({
             totalOrders: weeklyOrders.length,
-            pending: weeklyOrders.filter(o => o.status === "PENDING").length,
-            processing: weeklyOrders.filter(o => ["PROCESSING", "SHIPPED"].includes(o.status)).length,
-            delivered: weeklyOrders.filter(o => o.status === "DELIVERED").length,
+            pending: allOrders.filter(o => o.status?.toUpperCase() === "PENDING").length,
+            processing: allOrders.filter(o => ["PROCESSING", "SHIPPED"].includes(o.status?.toUpperCase())).length,
+            delivered: allOrders.filter(o => o.status?.toUpperCase() === "DELIVERED").length,
             totalProducts: productsData.success ? productsData.total_products : 0
           });
         }

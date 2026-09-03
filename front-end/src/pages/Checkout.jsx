@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import productStore from "../store/Productstore";
 import Squarepayment from "../components/Squarepayment";
@@ -16,6 +16,7 @@ const Checkout = () => {
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [selectedOption, setSelectedOption] = useState("");
   const [successOrder, setSuccessOrder] = useState(null);
+  const [placingOrder, setPlacingOrder] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     name: "",
@@ -48,6 +49,11 @@ const Checkout = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
 const handlePlaceOrder = async (info) => {
+  // Guard against double-clicks / duplicate calls (e.g. Squarepayment's
+  // onPaymentSuccess firing and the user also clicking "Place Order")
+  // while a request is already in flight.
+  if (placingOrder) return;
+
   if (!formData.email || !formData.name || !formData.street1 ||
       !formData.city || !formData.state || !formData.zip || !formData.country) {
     alert("Please fill all the fields before placing order!");
@@ -61,6 +67,8 @@ const handlePlaceOrder = async (info) => {
     alert("Please complete card payment first!");
     return;
   }
+
+  setPlacingOrder(true);
 
   const currentUser = getCurrentUser();
 
@@ -101,6 +109,8 @@ const handlePlaceOrder = async (info) => {
     }
   } catch (error) {
     alert("Something went wrong while placing order");
+  } finally {
+    setPlacingOrder(false);
   }
 };
 
@@ -283,16 +293,25 @@ const handlePlaceOrder = async (info) => {
             <button
               onClick={() => handlePlaceOrder(paymentInfo)}
               type="button"
-              disabled={selectedOption === "bank" && !paymentDone}
-              className={`bg-gradient-to-r from-[#8D33F6] to-[#E034F5] px-8 py-2 rounded-md transition mt-6 w-72 text-white cursor-pointer
-                ${selectedOption === "bank" && !paymentDone
+              disabled={placingOrder || (selectedOption === "bank" && !paymentDone)}
+              className={`flex items-center justify-center gap-2 px-8 py-2 rounded-md transition mt-6 w-72 text-white
+                ${placingOrder
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  : selectedOption === "bank" && !paymentDone
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-[#8D33F6] to-[#E034F5] hover:opacity-90 cursor-pointer"
                 }`}
             >
-              {selectedOption === "bank" && !paymentDone
-                ? "Complete Card Payment First"
-                : "Place Order"}
+              {placingOrder ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Placing Order...
+                </>
+              ) : selectedOption === "bank" && !paymentDone ? (
+                "Complete Card Payment First"
+              ) : (
+                "Place Order"
+              )}
             </button>
           </div>
         </div>

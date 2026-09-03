@@ -10,10 +10,9 @@ export default function PrivateRoute({ children, adminOnly = false }) {
     const parsed = JSON.parse(user);
     const role = parsed.role ? parsed.role.toLowerCase() : "";
 
-    if (adminOnly && role !== "admin") {
-      return <Navigate to="/" />;
-    }
-
+   if (adminOnly && role !== "admin" && role !== "superadmin") {
+  return <Navigate to="/" />;
+}
   } catch (err) {
     console.error("Invalid user data:", err);
     localStorage.removeItem("user");

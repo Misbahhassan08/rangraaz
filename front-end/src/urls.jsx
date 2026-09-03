@@ -1,6 +1,8 @@
 const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/"
 ).replace(/\/+$/, "");
+
+
 const URLS = {
   // Products
   fetchProducts: `${BASE_URL}/products/products/`,
@@ -45,6 +47,7 @@ const URLS = {
   signup: `${BASE_URL}/signup/`,
   signin: `${BASE_URL}/signin/`,
   GOOGLE_LOGIN: `${BASE_URL}/google-login/`,
+    addAdmin: `${BASE_URL}/add-admin/`,
 
   manageAnnouncement: `${BASE_URL}/products/manage_announcement/`,
   updateSlider: `${BASE_URL}/products/update-slider/`,
@@ -54,9 +57,9 @@ const URLS = {
   updateUserRole: (userId) => `${BASE_URL}/update-role/${userId}/`,
   deleteUser: (id) => `${BASE_URL}/delete-user/${id}/`,
   deleteOrder: (id) => `${BASE_URL}/orders/delete/${id}/`,
-fetchSubSubCategories: (subcategoryId) => `${BASE_URL}/products/sub-subcategories/by-subcategory/${subcategoryId}/`,
-createSubSubCategory: `${BASE_URL}/products/sub-subcategories/create/`,
-linkSubCategorySubSubCategory: `${BASE_URL}/products/sub-subcategories/link/`,
+  fetchSubSubCategories: (subcategoryId) => `${BASE_URL}/products/sub-subcategories/by-subcategory/${subcategoryId}/`,
+  createSubSubCategory: `${BASE_URL}/products/sub-subcategories/create/`,
+  linkSubCategorySubSubCategory: `${BASE_URL}/products/sub-subcategories/link/`,
 
 };
 

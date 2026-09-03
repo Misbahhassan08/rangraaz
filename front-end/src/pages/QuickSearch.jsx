@@ -91,6 +91,25 @@ const POS = () => {
     }
   };
 
+  // Stock bar helper: width is now proportional to actual quantity (relative
+  // to a "healthy stock" reference level), so 0 stock renders as an empty
+  // bar instead of a full one. Color still signals severity independently.
+  const STOCK_REFERENCE_LEVEL = 20; // quantity at which the bar is considered "full"
+
+  const getStockBarStyle = (quantity) => {
+    if (quantity <= 0) {
+      return { color: 'bg-red-500', width: '0%' }; // out of stock — empty bar
+    }
+    const widthPct = Math.min((quantity / STOCK_REFERENCE_LEVEL) * 100, 100);
+    if (quantity <= 5) {
+      return { color: 'bg-red-400', width: `${widthPct}%` }; // low stock — red, short bar
+    }
+    if (quantity <= 15) {
+      return { color: 'bg-yellow-400', width: `${widthPct}%` }; // medium stock — amber
+    }
+    return { color: 'bg-green-500', width: `${widthPct}%` }; // healthy stock — green
+  };
+
   return (
     <div
       className="p-6 bg-gray-50 min-h-screen"
@@ -145,7 +164,9 @@ const POS = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {scannedItems.length > 0 ? (
-                scannedItems.map((item, index) => (
+                scannedItems.map((item, index) => {
+                  const stockBar = getStockBarStyle(item.quantity);
+                  return (
                   <tr key={index} className="hover:bg-purple-50/30 transition-colors" tabIndex="-1">
                     <td className="px-6 py-4 text-sm text-gray-400">{index + 1}</td>
                     <td className="px-6 py-4">
@@ -157,9 +178,9 @@ const POS = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="border border-purple-200 rounded-lg px-3 py-1.5 text-xs font-medium text-purple-800 bg-purple-50 uppercase">
-                        {item.sku}
-                      </span>
+                    <span className="inline-block whitespace-nowrap border border-purple-200 rounded-lg px-3 py-1.5 text-xs font-medium text-purple-800 bg-purple-50 uppercase">
+                    {item.sku}
+                    </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
@@ -167,7 +188,7 @@ const POS = () => {
                           {item.quantity} PCS
                         </span>
                         <div className="w-24 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                          <div className="h-full bg-green-500" style={{ width: item.quantity > 5 ? '100%' : '30%' }}></div>
+                          <div className={`h-full ${stockBar.color}`} style={{ width: stockBar.width }}></div>
                         </div>
                       </div>
                     </td>
@@ -191,7 +212,8 @@ const POS = () => {
                       </button>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan="7" className="px-6 py-20 text-center text-gray-400">

@@ -206,7 +206,7 @@ const Sidebar = () => {
               </button>
             </div>
           </div>,
-          document.body  // 👈 ye magic hai — sidebar se bahar body mein render hoga
+          document.body
         )}
         {/* Bottom Section */}
         <div className="mt-auto pt-10 space-y-2">

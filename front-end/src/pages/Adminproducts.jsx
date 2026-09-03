@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Trash2, Plus, X, Save, Tag, Image as ImageIcon } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Save, Tag, Image as ImageIcon ,Wand2} from "lucide-react";
 import URLS from "../urls";
 import LoadingButton from "../components/LoadingButton";
 
@@ -15,6 +15,7 @@ const ProductForm = ({
   subSubCategoryDraft,          // ← ADD
   setSubSubCategoryDraft,       // ← ADD
   createSubSubCategory,
+    generateSku, 
 
   setEdit,
   setNew,
@@ -24,6 +25,7 @@ const ProductForm = ({
     : parseFloat(data.original_price || 0).toFixed(2);
 
   const inputCls = "w-full border-2 border-gray-100 p-2.5 rounded-xl focus:border-purple-500 outline-none transition-all text-sm";
+
 
   return (
     <form onSubmit={(e) => handleSubmit(e, isEdit)} className="bg-white p-6 rounded-2xl border-2 border-purple-50 mb-6 shadow-xl">
@@ -100,12 +102,7 @@ const ProductForm = ({
           </div>
         </div>
 
-        {/* SKU */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">SKU Code</label>
-          <input type="text" name="sku" value={data.sku || ""} onChange={(e) => handleChange(e, isEdit)} className={inputCls} required />
-        </div>
-
+   
         {/* Pricing */}
         <div className="bg-purple-50/60 p-4 rounded-2xl col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4 border border-purple-100">
           <div className="space-y-1">
@@ -232,54 +229,111 @@ const ProductForm = ({
         </div>
 
         {/* Size & Stock */}
-        <div className="space-y-2 col-span-1 md:col-span-3">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">Size & Stock</label>
+        <div className="space-y-3 col-span-1 md:col-span-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Size & Stock</label>
+            {(data.size_stocks || []).length > 0 && (
+              <span className="text-[10px] font-bold uppercase tracking-wide text-purple-500">
+                {data.size_stocks.length} size{data.size_stocks.length > 1 ? "s" : ""} added
+              </span>
+            )}
+          </div>
+
           {(data.size_stocks || []).length === 0 && (
             <p className="text-xs text-gray-400 italic ml-1">No sizes added yet. Click below to add.</p>
           )}
-          <div className="flex flex-col gap-2">
+
+          <div className="flex flex-col gap-3">
             {(data.size_stocks || []).map((item, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Size (e.g. Small, XL)"
-                  value={item.size}
-                  onChange={(e) => {
-                    const updated = [...(data.size_stocks || [])];
-                    updated[i] = { ...updated[i], size: e.target.value };
-                    if (isEdit) setEdit(prev => ({ ...prev, size_stocks: updated }));
-                    else setNew(prev => ({ ...prev, size_stocks: updated }));
-                  }}
-                  className="flex-1 border-2 border-gray-100 p-2.5 rounded-xl text-sm outline-none focus:border-purple-500"
-                />
-                <input
-                  type="number"
-                  placeholder="Qty"
-                  value={item.quantity}
-                  min={0}
-                  onChange={(e) => {
-                    const updated = [...(data.size_stocks || [])];
-                    updated[i] = { ...updated[i], quantity: e.target.value };
-                    if (isEdit) setEdit(prev => ({ ...prev, size_stocks: updated }));
-                    else setNew(prev => ({ ...prev, size_stocks: updated }));
-                  }}
-                  className="w-24 border-2 border-gray-100 p-2.5 rounded-xl text-sm outline-none focus:border-purple-500"
-                />
-                <button type="button"
+              <div
+                key={i}
+                className="relative rounded-2xl border-2 border-slate-100 bg-slate-50/50 p-4 pt-5"
+              >
+                {/* Row index badge */}
+                <span className="absolute -top-2.5 -left-2.5 w-6 h-6 flex items-center justify-center rounded-full bg-purple-600 text-white text-[10px] font-black shadow-sm">
+                  {i + 1}
+                </span>
+
+                {/* Remove row button */}
+                <button
+                  type="button"
                   onClick={() => {
                     const updated = (data.size_stocks || []).filter((_, idx) => idx !== i);
                     if (isEdit) setEdit(prev => ({ ...prev, size_stocks: updated }));
                     else setNew(prev => ({ ...prev, size_stocks: updated }));
                   }}
-                  className="p-2.5 text-red-400 hover:bg-red-50 rounded-xl border border-red-100 transition-all">
-                  <X size={14} />
+                  className="absolute -top-2.5 -right-2.5 w-6 h-6 flex items-center justify-center rounded-full bg-white text-red-400 border border-red-100 shadow-sm hover:bg-red-500 hover:text-white transition-all"
+                >
+                  <X size={12} />
                 </button>
+
+                <div className="grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
+                  <div className="col-span-1 md:col-span-4 space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Size</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Small, XL"
+                      value={item.size}
+                      onChange={(e) => {
+                        const updated = [...(data.size_stocks || [])];
+                        updated[i] = { ...updated[i], size: e.target.value };
+                        if (isEdit) setEdit(prev => ({ ...prev, size_stocks: updated }));
+                        else setNew(prev => ({ ...prev, size_stocks: updated }));
+                      }}
+                      className="w-full bg-white border-2 border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:border-purple-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="col-span-1 md:col-span-2 space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Qty</label>
+                    <input
+                      type="number"
+                      placeholder="Qty"
+                      value={item.quantity}
+                      min={0}
+                      onChange={(e) => {
+                        const updated = [...(data.size_stocks || [])];
+                        updated[i] = { ...updated[i], quantity: e.target.value };
+                        if (isEdit) setEdit(prev => ({ ...prev, size_stocks: updated }));
+                        else setNew(prev => ({ ...prev, size_stocks: updated }));
+                      }}
+                      className="w-full bg-white border-2 border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:border-purple-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="col-span-2 md:col-span-4 space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">SKU</label>
+                    <input
+                      type="text"
+                      placeholder="SKU"
+                      value={item.sku || ""}
+                      onChange={(e) => {
+                        const updated = [...(data.size_stocks || [])];
+                        updated[i] = { ...updated[i], sku: e.target.value };
+                        if (isEdit) setEdit(prev => ({ ...prev, size_stocks: updated }));
+                        else setNew(prev => ({ ...prev, size_stocks: updated }));
+                      }}
+                      className="w-full bg-white border-2 border-slate-200 p-2.5 rounded-xl text-sm outline-none focus:border-purple-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="col-span-2 md:col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => generateSku(isEdit, i)}
+                      className="w-full flex items-center justify-center gap-1.5 bg-purple-100 text-purple-700 px-3 py-2.5 rounded-xl text-xs font-black uppercase hover:bg-purple-200 transition-all whitespace-nowrap"
+                    >
+                      <Wand2 size={14} /> Auto
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
+
           <button type="button"
             onClick={() => {
-              const newEntry = { size: "", quantity: 0 };
+              const newEntry = { size: "", quantity: 0, sku: "" };
               if (isEdit) setEdit(prev => ({ ...prev, size_stocks: [...(prev.size_stocks || []), newEntry] }));
               else setNew(prev => ({ ...prev, size_stocks: [...(prev.size_stocks || []), newEntry] }));
             }}
@@ -315,14 +369,12 @@ const ProductTable = () => {
   const [actionLoading, setActionLoading] = useState("");
   const [fetchedSubSubCategories, setFetchedSubSubCategories] = useState([]);
   const [subSubCategoryDraft, setSubSubCategoryDraft] = useState("");
-
   const initialState = {
     product_name: "", brand: "RANGRAAZ", product_type: "",
-    image_files: [], size_stocks: [], sku: "", vendor: "",
+    image_files: [], size_stocks: [], vendor: "",
     category_id: "", subcategory_id: "", sub_subcategory_id: "", original_price: "",
     discount_percentage: 0, is_sale_on: false,
   };
-
   const [newProduct, setNewProduct] = useState(initialState);
 
   const fetchProducts = async () => {
@@ -479,6 +531,41 @@ const ProductTable = () => {
       setActionLoading("");
     }
   };
+  const generateSku = (isEdit = false, rowIndex) => {
+    const data = isEdit ? editProduct : newProduct;
+
+    if (!data.vendor || !data.category_id) {
+      alert("Please fill in Vendor and Category before generating an SKU.");
+      return;
+    }
+    const row = (data.size_stocks || [])[rowIndex];
+    if (!row || !row.size || !row.size.trim()) {
+      alert("Please enter a size for this row before generating an SKU.");
+      return;
+    }
+
+    const vendorCode = data.vendor.trim().substring(0, 3).toUpperCase();
+    const countInCategory = productsData.filter(
+      (p) => String(p.category_id) === String(data.category_id)
+    ).length + 1;
+    const countCode = String(countInCategory).padStart(3, "0");
+    const sizeCode = row.size.trim().toUpperCase().replace(/\s+/g, "");
+
+    const sku = [vendorCode, countCode, sizeCode].join("-");
+
+    const updated = [...data.size_stocks];
+    updated[rowIndex] = { ...updated[rowIndex], sku };
+
+    if (isEdit) setEditProduct((prev) => ({ ...prev, size_stocks: updated }));
+    else setNewProduct((prev) => ({ ...prev, size_stocks: updated }));
+  };
+
+
+
+
+
+
+
 
   const fetchSubcategories = async (categoryId) => {
     if (!categoryId) { setFetchedSubcategories([]); return; }
@@ -554,7 +641,6 @@ const ProductTable = () => {
     formData.append("original_price", currentData.original_price);
     formData.append("discount_percentage", currentData.discount_percentage || 0);
     formData.append("is_sale_on", currentData.is_sale_on);
-    formData.append("sku", currentData.sku);
     formData.append("vendor", currentData.vendor);
     formData.append("category_id", currentData.category_id);
     formData.append("subcategory_id", currentData.subcategory_id);
@@ -785,6 +871,7 @@ const ProductTable = () => {
           subSubCategoryDraft={subSubCategoryDraft}
           setSubSubCategoryDraft={setSubSubCategoryDraft}
           createSubSubCategory={createSubSubCategory}
+            generateSku={generateSku}
           actionLoading={actionLoading}
           editProduct={editProduct}
           newProduct={newProduct}
@@ -809,6 +896,7 @@ const ProductTable = () => {
           subcategoryDraft={subcategoryDraft}
           setSubcategoryDraft={setSubcategoryDraft}
           createSubcategory={createSubcategory}
+           generateSku={generateSku}
           actionLoading={actionLoading}
           editProduct={editProduct}
           newProduct={newProduct}

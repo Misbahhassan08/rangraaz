@@ -47,12 +47,12 @@ const Login = () => {
       if (res.ok) {
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        const role = data.user?.role ? data.user.role.toLowerCase() : "";
-        if (role === "admin") {
-          navigate("/dashboard");
-        } else {
-          navigate("/");
-        }
+       const role = data.user?.role ? data.user.role.toLowerCase() : "";
+if (role === "admin" || role === "superadmin") {
+  navigate("/dashboard");
+} else {
+  navigate("/");
+}
       } else {
         setErrorMsg(data.message || "Google login failed.");
       }
@@ -110,11 +110,11 @@ const Login = () => {
 
         const role = data.user?.role ? data.user.role.toLowerCase() : "customer";
 
-        if (role === "admin") {
-          navigate("/dashboard");
-        } else {
-          navigate("/");
-        }
+       if (role === "admin" || role === "superadmin") {
+  navigate("/dashboard");
+} else {
+  navigate("/");
+}
         toggleForm();
       } catch (error) {
         console.error("Network or server error during Sign-Up:", error);
@@ -168,11 +168,11 @@ const Login = () => {
         // Safe role checking
         const role = data.user?.role ? data.user.role.toLowerCase() : "customer";
 
-        if (role === "admin") {
-          navigate("/dashboard");
-        } else {
-          navigate("/");
-        }
+       if (role === "admin" || role === "superadmin") {
+  navigate("/dashboard");
+} else {
+  navigate("/");
+}
       } catch (error) {
         console.error("Network or server error during Sign-In:", error);
         setErrorMsg("Sign-in error. Please try again in a moment.");

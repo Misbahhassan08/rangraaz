@@ -6,6 +6,7 @@ import { Trash2, Package, ChevronDown, X, CheckCircle2 } from "lucide-react";
 const statusOptions = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 const SHIPPO_TOKEN = import.meta.env.VITE_SHIPPO_TOKEN;
 
+
 const statusConfig = {
   PENDING: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
   PROCESSING: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-400" },
@@ -29,18 +30,21 @@ const OrdersTable = () => {
   const [orders, setOrders] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [formData, setFormData] = useState({
-    from_name: "", from_street1: "", from_city: "", from_state: "",
-    from_zip: "", from_country: "", from_email: "",
-    to_name: "", to_street1: "", to_city: "", to_state: "",
-    to_zip: "", to_country: "", to_email: "",
-    parcel_length: "", parcel_width: "", parcel_height: "", parcel_weight: "",
-  });
+ const [formData, setFormData] = useState({
+  from_name: "", from_street1: "", from_city: "", from_state: "",
+  from_zip: "", from_country: "", from_email: "", from_phone: "",
+  to_name: "", to_street1: "", to_city: "", to_state: "",
+  to_zip: "", to_country: "", to_email: "", to_phone: "",
+  parcel_length: "", parcel_width: "", parcel_height: "", parcel_weight: "",
+});
   const [rates, setRates] = useState([]);
   const [selectedRate, setSelectedRate] = useState(null);
   const [currentShipmentId, setCurrentShipmentId] = useState(null);
   const [step, setStep] = useState("form");
   const [loading, setLoading] = useState(false);
+
+
+  console.log("SHIPPO_TOKEN loaded:", SHIPPO_TOKEN);
 
   const formatUSD = (price) =>
     new Intl.NumberFormat("en-US", {
@@ -90,12 +94,13 @@ const OrdersTable = () => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `ShippoToken ${SHIPPO_TOKEN}` },
         body: JSON.stringify({
-          address_from: { name: formData.from_name, street1: formData.from_street1, city: formData.from_city, state: formData.from_state, zip: formData.from_zip, country: formData.from_country, email: formData.from_email },
-          address_to: { name: formData.to_name, street1: formData.to_street1, city: formData.to_city, state: formData.to_state, zip: formData.to_zip, country: formData.to_country, email: formData.to_email },
+        address_from: { name: formData.from_name, street1: formData.from_street1, city: formData.from_city, state: formData.from_state, zip: formData.from_zip, country: formData.from_country, email: formData.from_email, phone: formData.from_phone },
+address_to: { name: formData.to_name, street1: formData.to_street1, city: formData.to_city, state: formData.to_state, zip: formData.to_zip, country: formData.to_country, email: formData.to_email, phone: formData.to_phone },
           parcels: [{ length: formData.parcel_length, width: formData.parcel_width, height: formData.parcel_height, distance_unit: "in", weight: formData.parcel_weight, mass_unit: "lb" }],
         }),
       });
       const shipmentData = await shipmentRes.json();
+      console.log("Shippo response:", shipmentData);
       if (!shipmentData.object_id) { alert("Shipment creation failed!"); return; }
       setCurrentShipmentId(shipmentData.object_id);
       const rateRes = await fetch(`https://api.goshippo.com/shipments/${shipmentData.object_id}/rates/`, { headers: { Authorization: `ShippoToken ${SHIPPO_TOKEN}` } });
@@ -315,8 +320,7 @@ const OrdersTable = () => {
                             {dir} Address
                           </p>
                           <div className="space-y-2">
-                            {["name", "street1", "city", "state", "zip", "country", "email"].map((field) => (
-                              <input
+{["name", "street1", "city", "state", "zip", "country", "email", "phone"].map((field) => (                              <input
                                 key={field}
                                 name={`${prefix}_${field}`}
                                 value={formData[`${prefix}_${field}`]}
